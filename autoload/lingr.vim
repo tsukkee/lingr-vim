@@ -18,7 +18,8 @@ sys.path.append(vim.eval('pwd'))
 import lingr
 import lingrvim
 
-lingr_vim = lingrvim.LingrVim(vim.eval('s:lingr_vim_user'), vim.eval('s:lingr_vim_password'), 0)
+lingr_vim = lingrvim.LingrVim(\
+    vim.eval('s:lingr_vim_user'), vim.eval('s:lingr_vim_password'), 0)
 EOM
 endfunction
 

@@ -1,6 +1,6 @@
 # vim:set fileencoding=utf-8:
 
-# 参考にしたコード
+# This code is based on lingr.rb at below URL
 # http://github.com/psychs/lingr-irc/blob/master/lingr.rb
 
 import urllib
@@ -18,7 +18,8 @@ class Member(object):
         self.presence = res["presence"] == "online"
 
     def __str__(self):
-        return "<%s.%s %s %s>" % (__name__, self.__class__.__name__, self.username, self.name)
+        return "<%s.%s %s %s>"\
+            % (__name__, self.__class__.__name__, self.username, self.name)
 
 
 class Room(object):
@@ -30,18 +31,15 @@ class Room(object):
         self.backlog = []
         self.members = {}
 
-        msgs = res["messages"] if res.has_key("messages") else None
-        if msgs:
-            for m in msgs:
+        if res.has_key("messages"):
+            for m in res["messages"]:
                 self.backlog.append(Message(m))
 
-        roster = res["roster"] if res.has_key("roster") else None
-        if roster:
-            members = roster["members"] if roster.has_key("members") else None
-            if members:
-                for u in members:
+        if res.has_key("roster"):
+            if res["roster"].has_key("members"):
+                for u in res["roster"]["members"]:
                     m = Member(u)
-                    self.members[u.username] = m
+                    self.members[m.username] = m
 
     def add_member(self, member):
         self.members[member.username] = member
@@ -65,7 +63,8 @@ class Message(object):
         mine = self.public_session_id == my_public_session_id
 
     def __str__(self):
-        return "<%s.%s %s: %s>" % (__name__, self.__class__.__name__, self.speaker_id, self.text)
+        return "<%s.%s %s: %s>"\
+            % (__name__, self.__class__.__name__, self.speaker_id, self.text)
 
 
 class APIError(Exception):
@@ -74,7 +73,8 @@ class APIError(Exception):
         self.detail = res["detail"]
 
     def __str__(self):
-        return "<%s.%s code='%s' detail='%s'>" % (__name__, self.__class__.__name__, self.code, self.detail)
+        return "<%s.%s code='%s' detail='%s'>"\
+            % (__name__, self.__class__.__name__, self.code, self.detail)
 
 class Connection(object):
     URL_BASE = "http://lingr.com/api/"
@@ -128,8 +128,8 @@ class Connection(object):
         self.nickname = res["nickname"]
         self.public_id = res["public_id"]
         self.presence = res["presence"]
-        user = res["user"] if res.has_key("user") else None
-        if user:
+        if res.has_key("user"):
+            user = res["user"]
             self.name = user["name"]
             self.username = user["username"]
         self.rooms = {}
@@ -154,7 +154,8 @@ class Connection(object):
 
     def set_presence(self, presence):
         self._debug("requesting session/set_presence: " + presence)
-        res = self._post("session/set_presence", {"session": self.session, "presence": presence, "nickname": self.nickname})
+        res = self._post("session/set_presence",\
+            {"session": self.session, "presence": presence, "nickname": self.nickname})
         self._debug("session/set_presence response: " + str(res))
         return res
 
@@ -170,9 +171,8 @@ class Connection(object):
         res = self._get("room/show", {"session": self.session, "room": room_id})
         self._debug("room/show response: " + str(res))
 
-        rooms = res["rooms"] if res.has_key("rooms") else None
-        if rooms:
-            for d in rooms:
+        if res.has_key("rooms"):
+            for d in res["rooms"]:
                 r = Room(d)
                 for m in r.backlog:
                     m.decide_mine(self.public_id)
@@ -182,13 +182,15 @@ class Connection(object):
 
     def get_archives(self, room_id, max_message_id, limit = 100):
         self._debug("requesting room/get_archives: " + room_id + " " + str(max_message_id))
-        res = self._get("room/get_archives", {"session": self.session, "room": room_id, "before": max_message_id, "limit": limit})
+        res = self._get("room/get_archives",\
+            {"session": self.session, "room": room_id, "before": max_message_id, "limit": limit})
         self._debug("room/get_archives response: " + str(res))
         return res
 
     def subscribe(self, room_id, reset = True):
         self._debug("requesting room/subscribe: " + room_id)
-        res = self._post("room/subscribe", {"session": self.session, "room": room_id, "reset": str(reset).lower()})
+        res = self._post("room/subscribe",\
+            {"session": self.session, "room": room_id, "reset": str(reset).lower()})
         self._debug("room/subscribe response: " + str(res))
         self.counter = res["counter"]
         return res
@@ -200,7 +202,8 @@ class Connection(object):
         return res
 
     def say(self, room_id, text):
-        res = self._post("room/say", {"session": self.session, "room": room_id, "nickname": self.nickname, "text": text})
+        res = self._post("room/say",\
+            {"session": self.session, "room": room_id, "nickname": self.nickname, "text": text})
         return res
 
     def observe(self):
@@ -211,38 +214,36 @@ class Connection(object):
         if res.has_key("counter"):
             self.counter = res["counter"]
 
-        events = res["events"] if res.has_key("events") else None
-        if events:
-            for event in events:
-                d = event["message"] if event.has_key("message") else None
-                if d:
-                    room = self.rooms[d["room"]] if self.rooms.has_key(d["room"]) else None
-                    if room:
+        if res.has_key("events"):
+            for event in res["events"]:
+                if event.has_key("message"):
+                    d = event["message"]
+                    if self.rooms.has_key(d["room"]):
+                        room = self.rooms[d["room"]]
                         m = Message(d)
                         m.decide_mine(self.public_id)
                         for h in self.message_hooks:
                             h(self, room, m)
-                else:
-                    d = event["presence"] if event.has_key("presence") else None
-                    if d:
-                        room = self.rooms[d["room"]] if self.rooms.has_key(d["room"]) else None
-                        if room:
-                            usename = d["username"]
-                            id = d["public_session_id"]
-                            status = d["status"] if d.has_key("status") else None
-                            if status == "online":
-                                m = room.members[usename] if room.members.has_key(usename) else None
-                                if m:
-                                    m.presence = True
-                                    for h in self.join_hooks:
-                                        h(self, room, m)
 
-                            elif status == "offline":
-                                m = room.members[usename] if room.members.has_key(usename) else None
-                                if m:
-                                    m.presence = False
-                                    for h in self.leave_hooks:
-                                        h(self, room, m)
+                elif event.has_key("presence"):
+                    d = event["presence"]
+                    if self.rooms.has_key(d["room"]):
+                        room = self.rooms[d["room"]]
+                        username = d["username"]
+                        status = d["status"] if d.has_key("status") else None
+                        if status == "online":
+                            if room.members.has_key(username):
+                                m = room.members[username]
+                                m.presence = True
+                                for h in self.join_hooks:
+                                    h(self, room, m)
+
+                        elif status == "offline":
+                            if room.members.has_key(username):
+                                m = room.members[username]
+                                m.presence = False
+                                for h in self.leave_hooks:
+                                    h(self, room, m)
 
 
     def _on_error(self, e):

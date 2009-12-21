@@ -1,3 +1,5 @@
+# vim:set fileencoding=utf-8:
+
 import vim
 import lingr
 import threading
