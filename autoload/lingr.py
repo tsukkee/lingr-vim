@@ -207,7 +207,7 @@ class Connection(object):
         return res
 
     def observe(self):
-        self._debug("requesting event/observe: " + self.counter)
+        self._debug("requesting event/observe: " + str(self.counter))
         res = self._get("event/observe", {"session": self.session, "counter": self.counter})
         self._debug("event/observe response: " + str(res))
 
@@ -293,18 +293,18 @@ class Connection(object):
 
     def _debug(self, text):
         if self.logger:
-            logger.debug(text)
+            self.logger.debug(text)
 
     def _log(self, text):
         if self.logger:
-            logger.info(text)
+            self.logger.info(text)
 
     def _log_error(self, text):
         if self.logger:
-            logger.error(text)
+            self.logger.error(text)
 
 
-if __name__ == '__main__':
+def _get_debug_logger():
     logger = logging.getLogger("lingr.py")
     logger.setLevel(logging.DEBUG)
 
@@ -316,3 +316,8 @@ if __name__ == '__main__':
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
+    return logger
+
+
+if __name__ == '__main__':
+    pass
