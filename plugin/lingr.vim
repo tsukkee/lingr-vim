@@ -31,6 +31,14 @@ set cpo&vim
 command! LingrLaunch call lingr#launch()
 command! LingrSay -nargs=1 call lingr#say(<f-args>)
 
+" append python path
+let s:path = expand('<sfile>:p:h:h') . '/autoload'
+python <<EOM
+import sys
+import vim
+sys.path.append(vim.eval('s:path'))
+EOM
+
 " restore
 let &cpo = s:cpo_save
 

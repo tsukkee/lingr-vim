@@ -7,28 +7,30 @@ import logging
 
 class LingrObserver(threading.Thread):
     def __init__(self, lingr):
+        threading.Thread.__init__(self)
         self.lingr = lingr
-        self.alive = True
 
     def run(self):
-        while(self.alive):
-            lingr.observe()
+        self.lingr.start()
 
 class LingrVim(object):
     def __init__(self, user, password, bufnr):
-        self.lingr = lingr.Connection(user, password)
-        self.buffer = vim.buffers[bufnr]
-        self.current_room = ""
+        self.lingr = lingr.Connection(user, password, logger = lingr._get_debug_logger())
+        self.buffer = vim.buffers[bufnr - 1]
+        self.current_room = "vim" # TODO: should choose room
 
     def setup(self):
         def connected_hook(sender):
-            pass
+            if sender.rooms.has_key(self.current_room):
+                for m in sender.rooms[self.current_room].backlog:
+                    self.buffer.append(m.text.encode('utf-8'))
 
         def error_hook(sender, error):
             pass
 
         def message_hook(sender, room_id, message):
-            pass
+            if self.current_room == room_id:
+                self.buffer.append(message.text.encode('utf-8'))
 
         def join_hook(sender, room_id, member):
             pass
@@ -36,13 +38,13 @@ class LingrVim(object):
         def leave_hook(sender, room_id, member):
             pass
 
-        lingr.connected_hooks.append(connected_hook)
-        lingr.error_hooks.append(error_hook)
-        lingr.message_hooks.append(message_hook)
-        lingr.join_hooks.append(join_hook)
-        lingr.leave_hooks.append(leave_hook)
+        self.lingr.connected_hooks.append(connected_hook)
+        self.lingr.error_hooks.append(error_hook)
+        self.lingr.message_hooks.append(message_hook)
+        self.lingr.join_hooks.append(join_hook)
+        self.lingr.leave_hooks.append(leave_hook)
 
-        observer = LingrObserver(lingr)
+        observer = LingrObserver(self.lingr)
         observer.start()
 
     def say(self, text):

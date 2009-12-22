@@ -79,8 +79,8 @@ class APIError(Exception):
 class Connection(object):
     URL_BASE = "http://lingr.com/api/"
     URL_BASE_OBSERVE = "http://lingr.com:8080/api/"
-    REQUEST_TIMEOUT = 100
-    RETRY_INTERVAL = 60
+    REQUEST_TIMEOUT = 100 # sec
+    RETRY_INTERVAL = 60 # sec
 
     def __init__(self, user, password, auto_reconnect = True, logger = None):
         self.user = user
@@ -95,6 +95,9 @@ class Connection(object):
         self.leave_hooks = []
 
         socket.setdefaulttimeout(Connection.REQUEST_TIMEOUT)
+
+    def __del__(self):
+        socket.setdefaulttimeout(None)
 
     def start(self):
         try:
@@ -114,7 +117,7 @@ class Connection(object):
             self._on_error(e)
             if self.auto_reconnect:
                 pass # TODO: retry
-        except (IOError, ValueError) as e:
+        except (IOError, ValueError) as e: # ValueError can be raised by json.loads
             self._on_error(e)
             if self.auto_reconnect:
                 pass # TODO: retry
