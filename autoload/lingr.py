@@ -17,7 +17,7 @@ class Member(object):
         self.owner = res["owner"]
         self.presence = res["presence"] == "online"
 
-    def __str__(self):
+    def __repr__(self):
         return "<%s.%s %s %s>"\
             % (__name__, self.__class__.__name__, self.username, self.name)
 
@@ -44,7 +44,7 @@ class Room(object):
     def add_member(self, member):
         self.members[member.username] = member
 
-    def __str__(self):
+    def __repr__(self):
         return "<%s.%s %s>" % (__name__, self.__class__.__name__, self.id)
 
 
@@ -62,7 +62,7 @@ class Message(object):
     def decide_mine(self, my_public_session_id):
         mine = self.public_session_id == my_public_session_id
 
-    def __str__(self):
+    def __repr__(self):
         return "<%s.%s %s: %s>"\
             % (__name__, self.__class__.__name__, self.speaker_id, self.text)
 
@@ -72,7 +72,7 @@ class APIError(Exception):
         self.code = res["code"]
         self.detail = res["detail"]
 
-    def __str__(self):
+    def __repr__(self):
         return "<%s.%s code='%s' detail='%s'>"\
             % (__name__, self.__class__.__name__, self.code, self.detail)
 

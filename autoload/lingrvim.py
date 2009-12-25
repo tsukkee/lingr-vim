@@ -15,7 +15,8 @@ class LingrObserver(threading.Thread):
 
 class LingrVim(object):
     def __init__(self, user, password, bufnr):
-        self.lingr = lingr.Connection(user, password, logger = lingr._get_debug_logger())
+        # self.lingr = lingr.Connection(user, password, logger = lingr._get_debug_logger())
+        self.lingr = lingr.Connection(user, password)
         self.buffer = vim.buffers[bufnr - 1]
         self.current_room = "vim" # TODO: should choose room
 
@@ -23,20 +24,25 @@ class LingrVim(object):
         def connected_hook(sender):
             if sender.rooms.has_key(self.current_room):
                 for m in sender.rooms[self.current_room].backlog:
-                    self.buffer.append(m.text.encode('utf-8'))
+                    # vim.buffer.append() cannot receive newlines
+                    for text in m.text.split("\n"):
+                        self.buffer.append(text.encode('utf-8'))
 
         def error_hook(sender, error):
-            pass
+            print "Lingr error: " + str(error)
 
-        def message_hook(sender, room_id, message):
-            if self.current_room == room_id:
-                self.buffer.append(message.text.encode('utf-8'))
+        def message_hook(sender, room, message):
+            if self.current_room == room.id:
+                for text in message.text.split("\n"):
+                    self.buffer.append(text.encode('utf-8'))
 
-        def join_hook(sender, room_id, member):
-            pass
+        def join_hook(sender, room, member):
+            if self.current_room == room.id:
+                self.buffer.append("-- " + member.username.encode('utf-8') + " is now online")
 
-        def leave_hook(sender, room_id, member):
-            pass
+        def leave_hook(sender, room, member):
+            if self.current_room == room.id:
+                self.buffer.append("-- " + member.username.encode('utf-8') + " is now offline")
 
         self.lingr.connected_hooks.append(connected_hook)
         self.lingr.error_hooks.append(error_hook)
