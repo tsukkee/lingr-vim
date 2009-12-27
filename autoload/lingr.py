@@ -282,7 +282,7 @@ class Connection(object):
 
     def _post(self, path, params = None):
         url = Connection.URL_BASE + path
-        params = urllib.urlencode(params)if params != None else ""
+        params = urllib.urlencode(params) if params != None else ""
 
         try:
             res = json.loads(urllib.urlopen(url, params).read())
@@ -320,7 +320,3 @@ def _get_debug_logger():
     logger.addHandler(ch)
 
     return logger
-
-
-if __name__ == '__main__':
-    pass
