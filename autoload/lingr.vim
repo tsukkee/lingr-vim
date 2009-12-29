@@ -18,7 +18,7 @@ function! lingr#launch()
                 \ : inputsecret('Lingr password? ')
 
     " setup buffer
-    let [messages_bufnr, rooms_bufnr, members_bufnr] = lingr#setup_buffer()
+    let [messages_bufnr, members_bufnr, rooms_bufnr] = lingr#setup_buffers()
 
     " import lingrvim
     python <<EOM
@@ -27,37 +27,42 @@ import lingr
 import lingrvim
 
 lingr_vim = lingrvim.LingrVim(\
-    vim.eval('s:user'), vim.eval('s:password'), int(vim.eval('messages_bufnr')),\
-        int(vim.eval('rooms_bufnr')), int(vim.eval('members_bufnr')))
+    vim.eval('s:user'),\
+    vim.eval('s:password'),\
+    int(vim.eval('messages_bufnr')),\
+    int(vim.eval('members_bufnr')),\
+    int(vim.eval('rooms_bufnr')))
 lingr_vim.setup()
 EOM
 endfunction
 
-function! lingr#setup_buffer()
-    execute 'edit +setfiletype\ ' . s:MESSAGES_FILETYPE s:MESSAGES_BUFNAME
-    setlocal buftype=nofile
-    setlocal noswapfile
-    setlocal bufhidden=hide
-    let messages_bufnr = bufnr('')
-
-    execute 'topleft vsplit' s:MEMBERS_BUFNAME
-    let &filetype = s:MEMBERS_FILETYPE
-    setlocal buftype=nofile
-    setlocal noswapfile
-    setlocal bufhidden=hide
-    let members_bufnr = bufnr('')
-    execute s:SIDEBAR_WIDTH 'wincmd |'
-
-    execute 'split' s:ROOMS_BUFNAME
-    let &filetype = s:ROOMS_FILETYPE
-    setlocal buftype=nofile
-    setlocal noswapfile
-    setlocal bufhidden=hide
-    let rooms_bufnr = bufnr('')
-    execute s:ROOMS_BUFFER_HEIGHT 'wincmd _'
-
-    return [messages_bufnr, rooms_bufnr, members_bufnr]
+function! lingr#setup_buffers()
+    return [
+                \ s:setup_buffer(
+                \     'edit',
+                \     s:MESSAGES_BUFNAME,
+                \     s:MESSAGES_FILETYPE,
+                \     'normal! G'),
+                \ s:setup_buffer(
+                \     'topleft vsplit',
+                \     s:MEMBERS_BUFNAME,
+                \     s:MEMBERS_FILETYPE,
+                \     s:SIDEBAR_WIDTH . ' wincmd |'),
+                \ s:setup_buffer(
+                \     'leftabove split',
+                \     s:ROOMS_BUFNAME,
+                \     s:ROOMS_FILETYPE,
+                \     s:ROOMS_BUFFER_HEIGHT . ' wincmd _'),
+                \ ]
 endfunction
+
+function! s:setup_buffer(command, bufname, filetype, after)
+    execute a:command a:bufname
+    let &filetype = a:filetype
+    execute a:after
+    return bufnr('')
+endfunction
+
 
 function! lingr#say(text)
     python <<EOM
