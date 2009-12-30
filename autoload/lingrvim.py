@@ -16,16 +16,22 @@ class LingrObserver(threading.Thread):
 
 def do_buffer_command(buffer, command):
     current_bufnr = vim.eval('bufnr("")')
+    bufnum, lnum, col, off = vim.eval('getpos(".")')
+
     vim.command('silent buffer ' + str(buffer.number))
     vim.command(command)
+
     vim.command('silent buffer ' + current_bufnr)
+    vim.eval('setpos(".", [%s, %s, %s, %s])' % (bufnum, lnum, col, off))
 
 
 def make_modifiable(buffer, func):
     def do(*args, **keywords):
+        lazyredraw_save = vim.eval('&lazyredraw')
         do_buffer_command(buffer, 'silent setlocal modifiable')
         func(*args, **keywords)
         do_buffer_command(buffer, 'silent setlocal nomodifiable')
+        vim.command('let &lazyredraw = ' + lazyredraw_save)
     return do
 
 
@@ -107,6 +113,19 @@ class LingrVim(object):
             self.current_room_id = room_id
             self.render_all()
 
+    def get_archives(self):
+        messages = self.messages[self.current_room_id]
+        res = self.lingr.get_archives(\
+            self.current_room_id, messages[0].id)
+
+        archives = []
+        for m in res["messages"]:
+            archives.append(lingr.Message(m))
+        archives.append(self._dummy_message())
+
+        self.messages[self.current_room_id] = archives + messages
+        self.render_messages()
+
     def say(self, text):
         if self.current_room_id:
             self.lingr.say(self.current_room_id, text)
@@ -119,6 +138,7 @@ class LingrVim(object):
     def _render_messages(self):
         del self.messages_buffer[:]
         self.messages_buffer[0] = "[Read more from archives...]"
+        self.last_speaker_id = ""
         for m in self.messages[self.current_room_id]:
             self._show_message(m)
 
@@ -162,3 +182,15 @@ class LingrVim(object):
         # vim.buffer.append() cannot receive newlines
         for text in message.text.split("\n"):
             self.messages_buffer.append(' ' + text.encode('utf-8'))
+
+    def _dummy_message(self):
+        return lingr.Message({\
+            'id': '-1',\
+            'type': 'dummy',\
+            'nickname': '-----',\
+            'speaker_id': '-1',\
+            'public_session_id': '-1',\
+            'text': '-----',\
+            'timestamp': '0'\
+            }) # TODO: use time to get archives
+
