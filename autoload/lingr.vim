@@ -6,6 +6,7 @@ let s:MEMBERS_BUFNAME = 'lingr-members'
 let s:MEMBERS_FILETYPE = 'lingr-members'
 let s:SIDEBAR_WIDTH = 25
 let s:ROOMS_BUFFER_HEIGHT = 10
+let s:GET_ARCHIVES_MESSAGE = "[Get more from archives...]"
 
 function! lingr#launch()
     " get username and password
@@ -18,7 +19,21 @@ function! lingr#launch()
                 \ : inputsecret('Lingr password? ')
 
     " setup buffer
-    let [messages_bufnr, members_bufnr, rooms_bufnr] = lingr#setup_buffers()
+    let messages_bufnr = s:setup_buffer(
+                \ 'edit',
+                \ s:MESSAGES_BUFNAME,
+                \ s:MESSAGES_FILETYPE,
+                \ 'normal! G')
+    let members_bufnr = s:setup_buffer(
+                \ 'topleft vsplit',
+                \ s:MEMBERS_BUFNAME,
+                \ s:MEMBERS_FILETYPE,
+                \ s:SIDEBAR_WIDTH . ' wincmd |')
+    let rooms_bufnr = s:setup_buffer(
+                \ 'leftabove split',
+                \ s:ROOMS_BUFNAME,
+                \ s:ROOMS_FILETYPE,
+                \ s:ROOMS_BUFFER_HEIGHT . ' wincmd _')
 
     " import lingrvim
     python <<EOM
@@ -36,25 +51,19 @@ lingr_vim.setup()
 EOM
 endfunction
 
-function! lingr#setup_buffers()
-    return [
-                \ s:setup_buffer(
-                \     'edit',
-                \     s:MESSAGES_BUFNAME,
-                \     s:MESSAGES_FILETYPE,
-                \     'normal! G'),
-                \ s:setup_buffer(
-                \     'topleft vsplit',
-                \     s:MEMBERS_BUFNAME,
-                \     s:MEMBERS_FILETYPE,
-                \     s:SIDEBAR_WIDTH . ' wincmd |'),
-                \ s:setup_buffer(
-                \     'leftabove split',
-                \     s:ROOMS_BUFNAME,
-                \     s:ROOMS_FILETYPE,
-                \     s:ROOMS_BUFFER_HEIGHT . ' wincmd _'),
-                \ ]
+
+function! lingr#say(text)
+    python <<EOM
+# coding=utf-8
+lingr_vim.say(vim.eval('a:text'))
+EOM
 endfunction
+
+
+function! lingr#get_archives_message()
+    return s:GET_ARCHIVES_MESSAGE
+endfunction
+
 
 function! s:setup_buffer(command, bufname, filetype, after)
     execute a:command a:bufname
@@ -64,9 +73,3 @@ function! s:setup_buffer(command, bufname, filetype, after)
 endfunction
 
 
-function! lingr#say(text)
-    python <<EOM
-# coding=utf-8
-lingr_vim.say(vim.eval('a:text'))
-EOM
-endfunction

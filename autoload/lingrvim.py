@@ -47,9 +47,10 @@ class LingrVim(object):
         self.render_rooms = \
             make_modifiable(self.rooms_buffer, self._render_rooms)
 
-        # self.current_room = "vim" # TODO: should choose room
-
-        self.messages = {} # {"room1": [member1, member2], "room2": [member1 ...
+        # for display messages
+        self.current_room_id = ""
+        self.last_speaker_id = ""
+        self.messages = {} # {"room1": [message1, message2], "room2": [message1 ...
 
     def setup(self):
         def connected_hook(sender):
@@ -59,7 +60,7 @@ class LingrVim(object):
                 for m in room.backlog:
                     self.messages[id].append(m)
 
-            self.current_room = sender.rooms.keys()[0]
+            self.current_room_id = sender.rooms.keys()[0]
             self.render_all()
 
         def error_hook(sender, error):
@@ -67,21 +68,18 @@ class LingrVim(object):
 
         def message_hook(sender, room, message):
             self.messages[room.id].append(message)
-            if self.current_room == room.id:
-                self.messages_buffer.append(message.nickname.encode('utf-8') + '::')
-
-                # vim.buffer.append() cannot receive newlines
-                for text in message.text.split("\n"):
-                    self.messages_buffer.append(text.encode('utf-8'))
+            if self.current_room_id == room.id:
+                self._show_message(message)
+                do_buffer_command(self.messages_buffer, 'silent normal! G')
 
         def join_hook(sender, room, member):
-            if self.current_room == room.id:
+            if self.current_room_id == room.id:
                 self.messages_buffer.append(\
                     "-- " + member.name.encode('utf-8') + " is now online")
                 self.render_members()
 
         def leave_hook(sender, room, member):
-            if self.current_room == room.id:
+            if self.current_room_id == room.id:
                 self.messages_buffer.append(\
                     "-- " + member.name.encode('utf-8') + " is now offline")
                 self.render_members()
@@ -98,9 +96,20 @@ class LingrVim(object):
         observer = LingrObserver(self.lingr)
         observer.start()
 
+    def select_room_by_lnum(self, lnum):
+        rooms = self.lingr.rooms.keys()
+        if lnum <= len(rooms):
+            self.select_room(rooms[lnum - 1])
+
+    def select_room(self, room_id):
+        rooms = self.lingr.rooms.keys()
+        if room_id in rooms and self.current_room_id != room_id:
+            self.current_room_id = room_id
+            self.render_all()
+
     def say(self, text):
-        if self.current_room:
-            self.lingr.say(self.current_room, text)
+        if self.current_room_id:
+            self.lingr.say(self.current_room_id, text)
 
     def render_all(self):
         self.render_messages()
@@ -109,20 +118,16 @@ class LingrVim(object):
 
     def _render_messages(self):
         del self.messages_buffer[:]
-        self.messages_buffer[0] = "[get more archive]"
-        for m in self.messages[self.current_room]:
-            self.messages_buffer.append(m.nickname.encode('utf-8') + '::')
-
-            # vim.buffer.append() cannot receive newlines
-            for text in m.text.split("\n"):
-                self.messages_buffer.append(text.encode('utf-8'))
+        self.messages_buffer[0] = "[Read more from archives...]"
+        for m in self.messages[self.current_room_id]:
+            self._show_message(m)
 
     def _render_rooms(self):
         del self.rooms_buffer[:]
 
         is_first = True
         for id, room in self.lingr.rooms.iteritems():
-            mark = " *" if id == self.current_room else ""
+            mark = " *" if id == self.current_room_id else ""
             text = room.name.encode('utf-8') + mark
             if is_first:
                 self.rooms_buffer[0] = text
@@ -133,7 +138,7 @@ class LingrVim(object):
     def _render_members(self):
         del self.members_buffer[:]
 
-        members = self.lingr.rooms[self.current_room].members.values()
+        members = self.lingr.rooms[self.current_room_id].members.values()
         members.sort(key=lambda x: not x.presence)
 
         is_first = True
@@ -146,3 +151,14 @@ class LingrVim(object):
                 is_first = False
             else:
                 self.members_buffer.append(text)
+
+    def _show_message(self, message):
+        if self.last_speaker_id != message.speaker_id:
+            speaker = message.nickname.encode('utf-8')\
+                + ' (' + message.timestamp.encode('utf-8') + '):'
+            self.messages_buffer.append(speaker)
+            self.last_speaker_id = message.speaker_id
+
+        # vim.buffer.append() cannot receive newlines
+        for text in message.text.split("\n"):
+            self.messages_buffer.append(' ' + text.encode('utf-8'))
