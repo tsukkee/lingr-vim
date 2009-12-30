@@ -16,16 +16,16 @@ class LingrObserver(threading.Thread):
 
 def do_buffer_command(buffer, command):
     current_bufnr = vim.eval('bufnr("")')
-    vim.command('buffer ' + str(buffer.number))
+    vim.command('silent buffer ' + str(buffer.number))
     vim.command(command)
-    vim.command('buffer ' + current_bufnr)
+    vim.command('silent buffer ' + current_bufnr)
 
 
 def make_modifiable(buffer, func):
     def do(*args, **keywords):
-        do_buffer_command(buffer, 'setlocal modifiable')
+        do_buffer_command(buffer, 'silent setlocal modifiable')
         func(*args, **keywords)
-        do_buffer_command(buffer, 'setlocal nomodifiable')
+        do_buffer_command(buffer, 'silent setlocal nomodifiable')
     return do
 
 
