@@ -3,6 +3,7 @@
 import vim
 import lingr
 import threading
+import time
 import logging
 
 class LingrObserver(threading.Thread):
@@ -37,8 +38,8 @@ def make_modifiable(buffer, func):
 
 class LingrVim(object):
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
-        # self.lingr = lingr.Connection(user, password, logger = lingr._get_debug_logger())
-        self.lingr = lingr.Connection(user, password)
+        self.lingr = lingr.Connection(user, password, logger = lingr._get_debug_logger())
+        # self.lingr = lingr.Connection(user, password)
 
         # buffers
         self.messages_buffer = vim.buffers[messages_bufnr - 1]
@@ -57,6 +58,12 @@ class LingrVim(object):
         self.current_room_id = ""
         self.last_speaker_id = ""
         self.messages = {} # {"room1": [message1, message2], "room2": [message1 ...
+
+    def __del__(self):
+        print "__del__ start"
+        self.lingr.destroy_session()
+        self.observe.join()
+        print "__del__ end"
 
     def setup(self):
         def connected_hook(sender):
@@ -175,7 +182,7 @@ class LingrVim(object):
     def _show_message(self, message):
         if self.last_speaker_id != message.speaker_id:
             speaker = message.nickname.encode('utf-8')\
-                + ' (' + message.timestamp.encode('utf-8') + '):'
+                + ' (' + time.asctime(message.timestamp) + '):'
             self.messages_buffer.append(speaker)
             self.last_speaker_id = message.speaker_id
 

@@ -41,12 +41,16 @@ function! lingr#launch()
 import lingr
 import lingrvim
 
+if lingr_vim:
+    del lingr_vim
+
 lingr_vim = lingrvim.LingrVim(\
     vim.eval('s:user'),\
     vim.eval('s:password'),\
     int(vim.eval('messages_bufnr')),\
     int(vim.eval('members_bufnr')),\
     int(vim.eval('rooms_bufnr')))
+
 lingr_vim.setup()
 EOM
 endfunction

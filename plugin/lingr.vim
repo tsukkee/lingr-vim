@@ -39,6 +39,7 @@ python <<EOM
 import sys
 import vim
 sys.path.append(vim.eval('s:path'))
+lingr_vim = None
 EOM
 
 " restore

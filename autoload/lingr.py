@@ -56,7 +56,10 @@ class Message(object):
         self.speaker_id = res["speaker_id"]
         self.public_session_id = res["public_session_id"]
         self.text = res["text"]
-        self.timestamp = res["timestamp"] # TODO: parse iso8601 timestamp
+
+        t = time.strptime(res["timestamp"], "%Y-%m-%dT%H:%M:%SZ")
+        self.timestamp = time.localtime(time.mktime(t) - time.timezone)
+
         self.mine = False
 
     def decide_mine(self, my_public_session_id):
