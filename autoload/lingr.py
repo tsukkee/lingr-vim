@@ -4,6 +4,7 @@
 # http://github.com/psychs/lingr-irc/blob/master/lingr.rb
 
 import urllib
+import httplib
 import socket
 import time
 import json
@@ -82,6 +83,11 @@ class APIError(Exception):
 class Connection(object):
     URL_BASE = "http://lingr.com/api/"
     URL_BASE_OBSERVE = "http://lingr.com:8080/api/"
+
+    DOMAIN = "lingr.com"
+    DOMAIN_OBSERVE = "lingr.com:8080"
+    API_PATH = "/api/"
+
     REQUEST_TIMEOUT = 100 # sec
     RETRY_INTERVAL = 60 # sec
 
@@ -97,6 +103,8 @@ class Connection(object):
         self.join_hooks = []
         self.leave_hooks = []
 
+        self.session = None
+        self.connection = None
         socket.setdefaulttimeout(Connection.REQUEST_TIMEOUT)
 
     def __del__(self):
@@ -263,20 +271,24 @@ class Connection(object):
 
     def _get(self, path, params = None):
         is_observe = path == "event/observe"
-        url = Connection.URL_BASE_OBSERVE if is_observe else Connection.URL_BASE
-        url += path
-
+        domain = Connection.DOMAIN_OBSERVE if is_observe else Connection.DOMAIN
+        url = Connection.API_PATH + path
         if params:
             url += '?' + urllib.urlencode(params)
 
-        res = None
+        self.connection = httplib.HTTPConnection(domain)
         try:
-            res = json.loads(urllib.urlopen(url).read())
-        except IOError as e:
+            self.connection.request("GET", url)
+            response = self.connection.getresponse()
+            res = json.loads(response.read())
+        except httplib.HTTPException as e:
             if is_observe:
                 res = { "status" : "ok" }
             else:
                 raise e
+
+        self.connection.close()
+        self.connection = None
 
         if res["status"] == "ok":
             return res
@@ -284,13 +296,20 @@ class Connection(object):
             raise APIError(res)
 
     def _post(self, path, params = None):
-        url = Connection.URL_BASE + path
+        url = Connection.API_PATH + path
         params = urllib.urlencode(params) if params != None else ""
 
+        self.connection = httplib.HTTPConnection(Connection.DOMAIN)
         try:
-            res = json.loads(urllib.urlopen(url, params).read())
-        except IOError as e:
+            self.connection.request("POST", url, params)
+            response = self.connection.getresponse()
+            str = response.read().encode('utf-8')
+            res = json.loads(str)
+        except httplib.HTTPException as e:
             raise e
+
+        self.connection.close()
+        self.connection = None
 
         if res["status"] == "ok":
             return res
