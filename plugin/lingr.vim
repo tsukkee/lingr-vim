@@ -42,6 +42,11 @@ sys.path.append(vim.eval('s:path'))
 lingr_vim = None
 EOM
 
+" reset autocmd
+augroup plugin-lingr
+    autocmd!
+augroup END
+
 " restore
 let &cpo = s:cpo_save
 

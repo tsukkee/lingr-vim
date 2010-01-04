@@ -17,3 +17,5 @@ endfunction
 nnoremap <silent> <buffer> <Plug>(lingr-messages-get-archives)
             \ :<C-u>call <SID>get_archives()<CR>
 nmap <silent> <buffer> <CR> <Plug>(lingr-messages-get-archives)
+
+autocmd plugin-lingr WinEnter <buffer> silent $
