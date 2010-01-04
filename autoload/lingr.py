@@ -87,6 +87,8 @@ class Connection(object):
     DOMAIN = "lingr.com"
     DOMAIN_OBSERVE = "lingr.com:8080"
     API_PATH = "/api/"
+    HEADERS = {"Content-type": "application/x-www-form-urlencoded",
+               "Connection": "keep-alive"}
 
     REQUEST_TIMEOUT = 100 # sec
     RETRY_INTERVAL = 60 # sec
@@ -105,10 +107,9 @@ class Connection(object):
 
         self.session = None
         self.connection = None
-        socket.setdefaulttimeout(Connection.REQUEST_TIMEOUT)
 
     def __del__(self):
-        socket.setdefaulttimeout(None)
+        pass
 
     def start(self):
         try:
@@ -136,7 +137,7 @@ class Connection(object):
     def create_session(self):
         self._debug("requesting session/create: " + self.user)
         res = self._post("session/create", {"user": self.user, "password": self.password})
-        self._debug("ssession/create response: " + str(res))
+        self._debug("session/create response: " + str(res))
 
         self.session = res["session"]
         self.nickname = res["nickname"]
@@ -273,12 +274,11 @@ class Connection(object):
         is_observe = path == "event/observe"
         domain = Connection.DOMAIN_OBSERVE if is_observe else Connection.DOMAIN
         url = Connection.API_PATH + path
-        if params:
-            url += '?' + urllib.urlencode(params)
+        params = urllib.urlencode(params) if params else ""
 
-        self.connection = httplib.HTTPConnection(domain)
+        self.connection = httplib.HTTPConnection(domain, timeout=Connection.REQUEST_TIMEOUT)
         try:
-            self.connection.request("GET", url)
+            self.connection.request("GET", url, params, Connection.HEADERS)
             response = self.connection.getresponse()
             res = json.loads(response.read())
         except httplib.HTTPException as e:
@@ -297,11 +297,11 @@ class Connection(object):
 
     def _post(self, path, params = None):
         url = Connection.API_PATH + path
-        params = urllib.urlencode(params) if params != None else ""
+        params = urllib.urlencode(params) if params else ""
 
-        self.connection = httplib.HTTPConnection(Connection.DOMAIN)
+        self.connection = httplib.HTTPConnection(Connection.DOMAIN, timeout=Connection.REQUEST_TIMEOUT)
         try:
-            self.connection.request("POST", url, params)
+            self.connection.request("POST", url, params, Connection.HEADERS)
             response = self.connection.getresponse()
             str = response.read().encode('utf-8')
             res = json.loads(str)
