@@ -5,7 +5,7 @@ set bufhidden=hide
 setlocal foldcolumn=0
 
 function! s:select_room()
-python <<EOM
+    python <<EOM
 # coding=utf-8
 bufnum, lnum, col, off = vim.eval('getpos(".")')
 lingr_vim.select_room_by_lnum(int(lnum))

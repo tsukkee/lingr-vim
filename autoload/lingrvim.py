@@ -38,8 +38,8 @@ def make_modifiable(buffer, func):
 
 class LingrVim(object):
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
-        self.lingr = lingr.Connection(user, password, logger = lingr._get_debug_logger())
-        # self.lingr = lingr.Connection(user, password)
+        # self.lingr = lingr.Connection(user, password, logger = lingr._get_debug_logger())
+        self.lingr = lingr.Connection(user, password)
 
         # buffers
         self.messages_buffer = vim.buffers[messages_bufnr - 1]
@@ -191,13 +191,13 @@ class LingrVim(object):
             self.messages_buffer.append(' ' + text.encode('utf-8'))
 
     def _dummy_message(self):
-        return lingr.Message({\
-            'id': '-1',\
-            'type': 'dummy',\
-            'nickname': '-----',\
-            'speaker_id': '-1',\
-            'public_session_id': '-1',\
-            'text': '-----',\
-            'timestamp': '0'\
-            }) # TODO: use time to get archives
+        return lingr.Message({
+            'id': '-1',
+            'type': 'dummy',
+            'nickname': '-----',
+            'speaker_id': '-1',
+            'public_session_id': '-1',
+            'text': '-----',
+            'timestamp': time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            })
 
