@@ -151,6 +151,10 @@ class Connection(object):
 
     def destroy_session(self):
         try:
+            if self.connection:
+                self.connection.close()
+                self.connection = None
+
             self._debug("requesting session/destroy")
             res = self._post("session/destroy", {"session": self.session})
             self._debug("session/destroy response: " + str(res))
@@ -276,19 +280,21 @@ class Connection(object):
         if params:
             url += '?' + urllib.urlencode(params)
 
-        self.connection = httplib.HTTPConnection(domain, timeout=Connection.REQUEST_TIMEOUT)
+        connection = httplib.HTTPConnection(domain, timeout=Connection.REQUEST_TIMEOUT)
+        if is_observe:
+            self.connection = connection
         try:
-            self.connection.request("GET", url, headers=Connection.HEADERS)
-            response = self.connection.getresponse()
-            res = json.loads(response.read())
+            connection.request("GET", url, headers=Connection.HEADERS)
+            res = json.loads(connection.getresponse().read())
         except httplib.HTTPException as e:
             if is_observe:
                 res = { "status" : "ok" }
             else:
                 raise e
 
-        self.connection.close()
-        self.connection = None
+        connection.close()
+        if is_observe:
+            self.connection = None
 
         if res["status"] == "ok":
             return res
@@ -299,17 +305,14 @@ class Connection(object):
         url = Connection.API_PATH + path
         params = urllib.urlencode(params) if params else ""
 
-        self.connection = httplib.HTTPConnection(Connection.DOMAIN, timeout=Connection.REQUEST_TIMEOUT)
+        connection = httplib.HTTPConnection(Connection.DOMAIN, timeout=Connection.REQUEST_TIMEOUT)
         try:
-            self.connection.request("POST", url, params, Connection.HEADERS)
-            response = self.connection.getresponse()
-            str = response.read().encode('utf-8')
-            res = json.loads(str)
+            connection.request("POST", url, params, Connection.HEADERS)
+            res = json.loads(connection.getresponse().read())
         except httplib.HTTPException as e:
             raise e
 
-        self.connection.close()
-        self.connection = None
+        connection.close()
 
         if res["status"] == "ok":
             return res
