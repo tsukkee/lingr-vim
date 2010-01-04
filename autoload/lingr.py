@@ -87,8 +87,7 @@ class Connection(object):
     DOMAIN = "lingr.com"
     DOMAIN_OBSERVE = "lingr.com:8080"
     API_PATH = "/api/"
-    HEADERS = {"Content-type": "application/x-www-form-urlencoded",
-               "Connection": "keep-alive"}
+    HEADERS = {"Content-type": "application/x-www-form-urlencoded"}
 
     REQUEST_TIMEOUT = 100 # sec
     RETRY_INTERVAL = 60 # sec
@@ -274,11 +273,12 @@ class Connection(object):
         is_observe = path == "event/observe"
         domain = Connection.DOMAIN_OBSERVE if is_observe else Connection.DOMAIN
         url = Connection.API_PATH + path
-        params = urllib.urlencode(params) if params else ""
+        if params:
+            url += '?' + urllib.urlencode(params)
 
         self.connection = httplib.HTTPConnection(domain, timeout=Connection.REQUEST_TIMEOUT)
         try:
-            self.connection.request("GET", url, params, Connection.HEADERS)
+            self.connection.request("GET", url, headers=Connection.HEADERS)
             response = self.connection.getresponse()
             res = json.loads(response.read())
         except httplib.HTTPException as e:
