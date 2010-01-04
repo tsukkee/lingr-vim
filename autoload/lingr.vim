@@ -6,7 +6,7 @@ let s:MEMBERS_BUFNAME = 'lingr-members'
 let s:MEMBERS_FILETYPE = 'lingr-members'
 let s:SIDEBAR_WIDTH = 25
 let s:ROOMS_BUFFER_HEIGHT = 10
-let s:GET_ARCHIVES_MESSAGE = "[Get more from archives...]"
+let s:GET_ARCHIVES_MESSAGE = "[Read more from archives...]"
 
 function! lingr#launch()
     " get username and password

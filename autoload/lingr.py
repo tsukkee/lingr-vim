@@ -5,7 +5,6 @@
 
 import urllib
 import httplib
-import socket
 import time
 import json
 import logging
@@ -19,8 +18,8 @@ class Member(object):
         self.presence = res["presence"] == "online"
 
     def __repr__(self):
-        return "<%s.%s %s %s>"\
-            % (__name__, self.__class__.__name__, self.username, self.name)
+        return "<{0}.{1} {2.username} {3}>".format(\
+            __name__, self.__class__.__name__, self, self.name.encode('utf-8'))
 
 
 class Room(object):
@@ -32,12 +31,12 @@ class Room(object):
         self.backlog = []
         self.members = {}
 
-        if res.has_key("messages"):
+        if "messages" in res:
             for m in res["messages"]:
                 self.backlog.append(Message(m))
 
-        if res.has_key("roster"):
-            if res["roster"].has_key("members"):
+        if "roster" in res:
+            if "members" in res["roster"]:
                 for u in res["roster"]["members"]:
                     m = Member(u)
                     self.members[m.username] = m
@@ -46,7 +45,7 @@ class Room(object):
         self.members[member.username] = member
 
     def __repr__(self):
-        return "<%s.%s %s>" % (__name__, self.__class__.__name__, self.id)
+        return "<{0}.{1} {2.id}>".format(__name__, self.__class__.__name__, self)
 
 
 class Message(object):
@@ -67,8 +66,8 @@ class Message(object):
         mine = self.public_session_id == my_public_session_id
 
     def __repr__(self):
-        return "<%s.%s %s: %s>"\
-            % (__name__, self.__class__.__name__, self.speaker_id, self.text)
+        return "<{0}.{1} {2.speaker_id}: {3}>".format(\
+            __name__, self.__class__.__name__, self, self.text.encode('utf-8'))
 
 
 class APIError(Exception):
@@ -77,13 +76,10 @@ class APIError(Exception):
         self.detail = res["detail"]
 
     def __repr__(self):
-        return "<%s.%s code='%s' detail='%s'>"\
-            % (__name__, self.__class__.__name__, self.code, self.detail)
+        return "<{0}.{1} code='{2.code}' detail='{2.detail}'>".format(
+            __name__, self.__class__.__name__, self)
 
 class Connection(object):
-    URL_BASE = "http://lingr.com/api/"
-    URL_BASE_OBSERVE = "http://lingr.com:8080/api/"
-
     DOMAIN = "lingr.com"
     DOMAIN_OBSERVE = "lingr.com:8080"
     API_PATH = "/api/"
@@ -142,7 +138,7 @@ class Connection(object):
         self.nickname = res["nickname"]
         self.public_id = res["public_id"]
         self.presence = res["presence"]
-        if res.has_key("user"):
+        if "user" in res:
             user = res["user"]
             self.name = user["name"]
             self.username = user["username"]
@@ -189,7 +185,7 @@ class Connection(object):
         res = self._get("room/show", {"session": self.session, "room": room_id})
         self._debug("room/show response: " + str(res))
 
-        if res.has_key("rooms"):
+        if "rooms" in res:
             for d in res["rooms"]:
                 r = Room(d)
                 for m in r.backlog:
@@ -229,35 +225,35 @@ class Connection(object):
         res = self._get("event/observe", {"session": self.session, "counter": self.counter})
         self._debug("event/observe response: " + str(res))
 
-        if res.has_key("counter"):
+        if "counter" in res:
             self.counter = res["counter"]
 
-        if res.has_key("events"):
+        if "events" in res:
             for event in res["events"]:
-                if event.has_key("message"):
+                if "message" in event:
                     d = event["message"]
-                    if self.rooms.has_key(d["room"]):
+                    if d["room"] in self.rooms:
                         room = self.rooms[d["room"]]
                         m = Message(d)
                         m.decide_mine(self.public_id)
                         for h in self.message_hooks:
                             h(self, room, m)
 
-                elif event.has_key("presence"):
+                elif "presence" in event:
                     d = event["presence"]
-                    if self.rooms.has_key(d["room"]):
+                    if d["room"] in self.rooms:
                         room = self.rooms[d["room"]]
                         username = d["username"]
-                        status = d["status"] if d.has_key("status") else None
+                        status = d["status"] if "status" in d else None
                         if status == "online":
-                            if room.members.has_key(username):
+                            if username in room.members:
                                 m = room.members[username]
                                 m.presence = True
                                 for h in self.join_hooks:
                                     h(self, room, m)
 
                         elif status == "offline":
-                            if room.members.has_key(username):
+                            if username in room.members:
                                 m = room.members[username]
                                 m.presence = False
                                 for h in self.leave_hooks:

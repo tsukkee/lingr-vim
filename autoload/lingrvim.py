@@ -29,6 +29,7 @@ def do_buffer_command(buffer, command):
 def make_modifiable(buffer, func):
     def do(*args, **keywords):
         lazyredraw_save = vim.eval('&lazyredraw')
+        vim.command('set lazyredraw')
         do_buffer_command(buffer, 'silent setlocal modifiable')
         func(*args, **keywords)
         do_buffer_command(buffer, 'silent setlocal nomodifiable')
@@ -38,7 +39,7 @@ def make_modifiable(buffer, func):
 
 class LingrVim(object):
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
-        # self.lingr = lingr.Connection(user, password, logger = lingr._get_debug_logger())
+        # self.lingr = lingr.Connection(user, password, logger=lingr._get_debug_logger())
         self.lingr = lingr.Connection(user, password)
 
         # buffers
@@ -60,10 +61,8 @@ class LingrVim(object):
         self.messages = {} # {"room1": [message1, message2], "room2": [message1 ...
 
     def __del__(self):
-        print "__del__ start"
         self.lingr.destroy_session()
         self.observe.join()
-        print "__del__ end"
 
     def setup(self):
         def connected_hook(sender):
@@ -144,7 +143,7 @@ class LingrVim(object):
 
     def _render_messages(self):
         del self.messages_buffer[:]
-        self.messages_buffer[0] = "[Read more from archives...]"
+        self.messages_buffer[0] = vim.eval('lingr#get_archives_message()')
         self.last_speaker_id = ""
         for m in self.messages[self.current_room_id]:
             self._show_message(m)
