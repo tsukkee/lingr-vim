@@ -15,25 +15,11 @@ class LingrObserver(threading.Thread):
         self.lingr.start()
 
 
-def do_buffer_command(buffer, command):
-    current_bufnr = vim.eval('bufnr("")')
-    bufnum, lnum, col, off = vim.eval('getpos(".")')
-
-    vim.command('silent buffer ' + str(buffer.number))
-    vim.command(command)
-
-    vim.command('silent buffer ' + current_bufnr)
-    vim.eval('setpos(".", [%s, %s, %s, %s])' % (bufnum, lnum, col, off))
-
-
 def make_modifiable(buffer, func):
     def do(*args, **keywords):
-        lazyredraw_save = vim.eval('&lazyredraw')
-        vim.command('set lazyredraw')
-        do_buffer_command(buffer, 'silent setlocal modifiable')
+        vim.command("call setbufvar({0.number}, '&modifiable', 1)".format(buffer))
         func(*args, **keywords)
-        do_buffer_command(buffer, 'silent setlocal nomodifiable')
-        vim.command('let &lazyredraw = ' + lazyredraw_save)
+        vim.command("call setbufvar({0.number}, '&modifiable', 0)".format(buffer))
     return do
 
 
@@ -82,7 +68,6 @@ class LingrVim(object):
             self.messages[room.id].append(message)
             if self.current_room_id == room.id:
                 self._show_message(message)
-                do_buffer_command(self.messages_buffer, 'silent normal! G')
 
         def join_hook(sender, room, member):
             if self.current_room_id == room.id:
@@ -199,4 +184,3 @@ class LingrVim(object):
             'text': '-----',
             'timestamp': time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             })
-
