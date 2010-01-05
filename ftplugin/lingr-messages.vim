@@ -1,3 +1,7 @@
+if exists("b:did_ftplugin")
+    finish
+endif
+
 setlocal statusline=lingr-messages
 set buftype=nofile
 set noswapfile
@@ -19,3 +23,14 @@ nnoremap <silent> <buffer> <Plug>(lingr-messages-get-archives)
 nmap <silent> <buffer> <CR> <Plug>(lingr-messages-get-archives)
 
 autocmd plugin-lingr WinEnter <buffer> silent $
+
+let b:undo_ftplugin = 'setlocal statusline<'
+            \ . '| set buftype&'
+            \ . '| set swapfile&'
+            \ . '| set bufhidden&'
+            \ . '| setlocal foldcolumn<'
+            \ . '| setlocal modifiable<'
+            \ . '| nunmap <buffer> <CR>'
+            \ . '| autocmd! plugin-lingr WinEnter <buffer>'
+
+let b:did_ftplugin = 1

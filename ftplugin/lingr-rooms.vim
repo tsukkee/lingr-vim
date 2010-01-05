@@ -1,3 +1,7 @@
+if exists("b:did_ftplugin")
+    finish
+endif
+
 setlocal statusline=lingr-rooms
 set buftype=nofile
 set noswapfile
@@ -16,3 +20,13 @@ endfunction
 nnoremap <buffer> <silent> <Plug>(lingr-vim-select-room)
             \ :<C-u>call <SID>select_room()<CR>
 nmap <buffer> <silent> <CR> <Plug>(lingr-vim-select-room)
+
+let b:undo_ftplugin = 'setlocal statusline<'
+            \ . '| set buftype&'
+            \ . '| set swapfile&'
+            \ . '| set bufhidden&'
+            \ . '| setlocal foldcolumn<'
+            \ . '| setlocal modifiable<'
+            \ . '| nunmap <buffer> <CR>'
+
+let b:did_ftplugin = 1
