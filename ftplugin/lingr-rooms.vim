@@ -13,7 +13,7 @@ function! s:select_room()
 # coding=utf-8
 bufnum, lnum, col, off = vim.eval('getpos(".")')
 lingr_vim.select_room_by_lnum(int(lnum))
-vim.eval('setpos(".", [%s, %s, %s, %s])' % (bufnum, lnum, col, off))
+vim.eval('setpos(".", [{0}, {1}, {2}, {3}])'.format(bufnum, lnum, col, off))
 EOM
 endfunction
 

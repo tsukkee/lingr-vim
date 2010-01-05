@@ -6,15 +6,14 @@ let s:MEMBERS_BUFNAME = 'lingr-members'
 let s:MEMBERS_FILETYPE = 'lingr-members'
 let s:SIDEBAR_WIDTH = 25
 let s:ROOMS_BUFFER_HEIGHT = 10
-let s:GET_ARCHIVES_MESSAGE = "[Read more from archives...]"
 
 function! lingr#launch()
     " get username and password
-    let s:user = exists('g:lingr_vim_user')
+    let user = exists('g:lingr_vim_user')
                 \ ? g:lingr_vim_user
                 \ : input('Lingr username? ')
 
-    let s:password = exists('g:lingr_vim_password')
+    let password = exists('g:lingr_vim_password')
                 \ ? g:lingr_vim_password
                 \ : inputsecret('Lingr password? ')
 
@@ -23,7 +22,7 @@ function! lingr#launch()
                 \ 'edit',
                 \ s:MESSAGES_BUFNAME,
                 \ s:MESSAGES_FILETYPE,
-                \ 'normal! G')
+                \ '')
     let members_bufnr = s:setup_buffer(
                 \ 'topleft vsplit',
                 \ s:MEMBERS_BUFNAME,
@@ -45,8 +44,8 @@ if lingr_vim:
     del lingr_vim
 
 lingr_vim = lingrvim.LingrVim(\
-    vim.eval('s:user'),\
-    vim.eval('s:password'),\
+    vim.eval('user'),\
+    vim.eval('password'),\
     int(vim.eval('messages_bufnr')),\
     int(vim.eval('members_bufnr')),\
     int(vim.eval('rooms_bufnr')))
@@ -61,11 +60,6 @@ function! lingr#say(text)
 # coding=utf-8
 lingr_vim.say(vim.eval('a:text'))
 EOM
-endfunction
-
-
-function! lingr#get_archives_message()
-    return s:GET_ARCHIVES_MESSAGE
 endfunction
 
 

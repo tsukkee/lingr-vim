@@ -8,7 +8,7 @@ import logging
 
 class LingrObserver(threading.Thread):
     def __init__(self, lingr):
-        threading.Thread.__init__(self)
+        super(LingrObserver, self).__init__()
         self.lingr = lingr
 
     def run(self):
@@ -24,9 +24,14 @@ def make_modifiable(buffer, func):
 
 
 class LingrVim(object):
+    JOIN_MESSAGE = "-- {0} is now online"
+    LEAVE_MESSAGE = "-- {0} is now offline"
+    GET_ARCHIVES_MESSAGE = "[Read more from archives...]"
+    MESSAGE_HEADER = "{0} ({1}):"
+
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
-        # self.lingr = lingr.Connection(user, password, logger=lingr._get_debug_logger())
-        self.lingr = lingr.Connection(user, password)
+        # self.lingr = lingr.Connection(user, password, False, logger=lingr._get_debug_logger())
+        self.lingr = lingr.Connection(user, password, False)
 
         # buffers
         self.messages_buffer = vim.buffers[messages_bufnr - 1]
@@ -72,13 +77,13 @@ class LingrVim(object):
         def join_hook(sender, room, member):
             if self.current_room_id == room.id:
                 self.messages_buffer.append(\
-                    "-- " + member.name.encode('utf-8') + " is now online")
+                    LingrVim.JOIN_MESSAGE.format(member.name.encode('utf-8')))
                 self.render_members()
 
         def leave_hook(sender, room, member):
             if self.current_room_id == room.id:
                 self.messages_buffer.append(\
-                    "-- " + member.name.encode('utf-8') + " is now offline")
+                    LingrVim.LEAVE_MESSAGE.format(member.name.encode('utf-8')))
                 self.render_members()
 
         self.lingr.connected_hooks.append(connected_hook)
@@ -128,7 +133,8 @@ class LingrVim(object):
 
     def _render_messages(self):
         del self.messages_buffer[:]
-        self.messages_buffer[0] = vim.eval('lingr#get_archives_message()')
+
+        self.messages_buffer[0] = LingrVim.GET_ARCHIVES_MESSAGE
         self.last_speaker_id = ""
         for m in self.messages[self.current_room_id]:
             self._show_message(m)
@@ -136,15 +142,12 @@ class LingrVim(object):
     def _render_rooms(self):
         del self.rooms_buffer[:]
 
-        is_first = True
         for id, room in self.lingr.rooms.iteritems():
             mark = " *" if id == self.current_room_id else ""
             text = room.name.encode('utf-8') + mark
-            if is_first:
-                self.rooms_buffer[0] = text
-                is_first = False
-            else:
-                self.rooms_buffer.append(text)
+            self.rooms_buffer.append(text)
+
+        del self.rooms_buffer[0]
 
     def _render_members(self):
         del self.members_buffer[:]
@@ -152,22 +155,19 @@ class LingrVim(object):
         members = self.lingr.rooms[self.current_room_id].members.values()
         members.sort(key=lambda x: not x.presence)
 
-        is_first = True
         for m in members:
             owner = '(owner)' if m.owner else ''
             online = ' +' if m.presence else ' -'
             text = m.name.encode('utf-8') + owner + online
-            if is_first:
-                self.members_buffer[0] = text
-                is_first = False
-            else:
-                self.members_buffer.append(text)
+            self.members_buffer.append(text)
+
+        del self.members_buffer[0]
 
     def _show_message(self, message):
         if self.last_speaker_id != message.speaker_id:
-            speaker = message.nickname.encode('utf-8')\
-                + ' (' + time.asctime(message.timestamp) + '):'
-            self.messages_buffer.append(speaker)
+            text = LingrVim.MESSAGE_HEADER.format(\
+                message.nickname.encode('utf-8'), time.asctime(message.timestamp))
+            self.messages_buffer.append(text)
             self.last_speaker_id = message.speaker_id
 
         # vim.buffer.append() cannot receive newlines
@@ -182,5 +182,5 @@ class LingrVim(object):
             'speaker_id': '-1',
             'public_session_id': '-1',
             'text': '-----',
-            'timestamp': time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            'timestamp': time.strftime(lingr.Message.TIMESTAMP_FORMAT, time.gmtime())
             })

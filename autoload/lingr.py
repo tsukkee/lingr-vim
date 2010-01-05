@@ -49,6 +49,8 @@ class Room(object):
 
 
 class Message(object):
+    TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+
     def __init__(self, res):
         self.id = res["id"]
         self.type = res["type"]
@@ -57,7 +59,7 @@ class Message(object):
         self.public_session_id = res["public_session_id"]
         self.text = res["text"]
 
-        t = time.strptime(res["timestamp"], "%Y-%m-%dT%H:%M:%SZ")
+        t = time.strptime(res["timestamp"], Message.TIMESTAMP_FORMAT)
         self.timestamp = time.localtime(time.mktime(t) - time.timezone)
 
         self.mine = False
@@ -78,6 +80,7 @@ class APIError(Exception):
     def __repr__(self):
         return "<{0}.{1} code='{2.code}' detail='{2.detail}'>".format(
             __name__, self.__class__.__name__, self)
+
 
 class Connection(object):
     DOMAIN = "lingr.com"
@@ -101,6 +104,7 @@ class Connection(object):
         self.leave_hooks = []
 
         self.session = None
+        self.room_ids = []
         self.connection = None
 
     def __del__(self):
@@ -118,13 +122,16 @@ class Connection(object):
 
             while(True):
                 self.observe()
+
         except APIError as e:
             if e.code == "invalid_user_credentials":
                 raise e
             self._on_error(e)
             if self.auto_reconnect:
                 pass # TODO: retry
-        except (IOError, ValueError) as e: # ValueError can be raised by json.loads
+
+        except (http.HTTPException, ValueError) as e:
+        # ValueError can be raised by json.loads
             self._on_error(e)
             if self.auto_reconnect:
                 pass # TODO: retry
