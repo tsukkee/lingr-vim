@@ -1,7 +1,13 @@
-syntax match lingrMembersOnline display '.*\ze +$'
-syntax match lingrMembersOffline display '.*\ze -$'
-syntax match lingrMembersMarker display '[-+]$'
+if exists('b:current_syntax')
+    finish
+endif
 
-highlight def link lingrMembersOnline String
-highlight def link lingrMembersOffline Comment
-highlight def link lingrMembersMarker NonText
+syntax match lingrMembersOnline /.*\ze +$/
+syntax match lingrMembersOffline /.*\ze -$/
+syntax match lingrMembersMarker /[-+]$/
+
+highlight default link lingrMembersOnline String
+highlight default link lingrMembersOffline Comment
+highlight default link lingrMembersMarker NonText
+
+let b:current_syntax = 'lingr-members'

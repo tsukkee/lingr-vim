@@ -1,5 +1,11 @@
-syntax match lingrRoomsActive display '.*\ze \*$'
-syntax match lingrRoomsMarker display '\*$'
+if exists('b:current_syntax')
+    finish
+endif
 
-highlight def link lingrRoomsActive Title
-highlight def link lingrRoomsMarker NonText
+syntax match lingrRoomsActive display /.*\ze \*$/
+syntax match lingrRoomsMarker display /\*$/
+
+highlight default link lingrRoomsActive Title
+highlight default link lingrRoomsMarker NonText
+
+let b:current_syntax = 'lingr-rooms'

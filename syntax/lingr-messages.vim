@@ -1,8 +1,16 @@
-syntax match lingrMessagesSpeaker display '^[^ ].*\ze (.*):$'
-syntax match lingrMessagesTimestamp display '^[^ ].* \zs(.*)\ze:$'
-execute 'syntax keyword lingrMessagesGetArchives display ' escape(lingr#get_archives_message(), ' ')
+if exists('b:current_syntax')
+    finish
+endif
 
-highlight def link lingrMessagesSpeaker Title
-highlight def link lingrMessagesTimestamp Statement
-highlight def link lingrMessagesGetArchives Constant
+syntax match lingrMessagesGetArchives /\%1l.*/
+syntax match lingrMessagesHeader /^[^ ].* (.*):$/
+           \ contains=lingrMessagesSpeaker,lingrMessagesTimestamp
+syntax match lingrMessagesSpeaker /^[^ ][^(]*/ contained
+syntax match lingrMessagesTimestamp /(.*)/ contained
 
+
+highlight default link lingrMessagesSpeaker Title
+highlight default link lingrMessagesTimestamp Statement
+highlight default link lingrMessagesGetArchives Constant
+
+let b:current_syntax = 'lingr-messages'
