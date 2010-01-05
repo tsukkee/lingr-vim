@@ -8,6 +8,6 @@ syntax match lingrMembersMarker /[-+]$/
 
 highlight default link lingrMembersOnline String
 highlight default link lingrMembersOffline Comment
-highlight default link lingrMembersMarker NonText
+highlight default link lingrMembersMarker Ignore
 
 let b:current_syntax = 'lingr-members'
