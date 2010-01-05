@@ -28,6 +28,7 @@ class LingrVim(object):
     LEAVE_MESSAGE = "-- {0} is now offline"
     GET_ARCHIVES_MESSAGE = "[Read more from archives...]"
     MESSAGE_HEADER = "{0} ({1}):"
+    ARCHIVES_DELIMITER = "--------------------"
 
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
         # self.lingr = lingr.Connection(user, password, False, logger=lingr._get_debug_logger())
@@ -103,6 +104,11 @@ class LingrVim(object):
         if lnum <= len(rooms):
             self.select_room(rooms[lnum - 1])
 
+    def select_room_by_offset(self, offset):
+        rooms = self.lingr.rooms.keys()
+        next = (rooms.index(self.current_room_id) + offset) % len(rooms)
+        self.select_room(rooms[next])
+
     def select_room(self, room_id):
         rooms = self.lingr.rooms.keys()
         if room_id in rooms and self.current_room_id != room_id:
@@ -164,23 +170,27 @@ class LingrVim(object):
         del self.members_buffer[0]
 
     def _show_message(self, message):
-        if self.last_speaker_id != message.speaker_id:
-            text = LingrVim.MESSAGE_HEADER.format(\
-                message.nickname.encode('utf-8'), time.asctime(message.timestamp))
-            self.messages_buffer.append(text)
-            self.last_speaker_id = message.speaker_id
+        if message.type == "dummy":
+            self.last_speaker_id = ""
+            self.messages_buffer.append(LingrVim.ARCHIVES_DELIMITER)
+        else:
+            if self.last_speaker_id != message.speaker_id:
+                text = LingrVim.MESSAGE_HEADER.format(\
+                    message.nickname.encode('utf-8'), time.asctime(message.timestamp))
+                self.messages_buffer.append(text)
+                self.last_speaker_id = message.speaker_id
 
-        # vim.buffer.append() cannot receive newlines
-        for text in message.text.split("\n"):
-            self.messages_buffer.append(' ' + text.encode('utf-8'))
+            # vim.buffer.append() cannot receive newlines
+            for text in message.text.split("\n"):
+                self.messages_buffer.append(' ' + text.encode('utf-8'))
 
     def _dummy_message(self):
         return lingr.Message({
             'id': '-1',
             'type': 'dummy',
-            'nickname': '-----',
+            'nickname': '-',
             'speaker_id': '-1',
             'public_session_id': '-1',
-            'text': '-----',
+            'text': '-',
             'timestamp': time.strftime(lingr.Message.TIMESTAMP_FORMAT, time.gmtime())
             })
