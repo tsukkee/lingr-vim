@@ -29,6 +29,8 @@ class LingrVim(object):
     GET_ARCHIVES_MESSAGE = "[Read more from archives...]"
     MESSAGE_HEADER = "{0} ({1}):"
     ARCHIVES_DELIMITER = "--------------------"
+    MEMBERS_STATUSLINE = "lingr-members ({0}/{1})"
+    MESSAGES_STATUSLINE = "lingr-messages ({0})"
 
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
         # self.lingr = lingr.Connection(user, password, False, logger=lingr._get_debug_logger())
@@ -99,10 +101,11 @@ class LingrVim(object):
         observer = LingrObserver(self.lingr)
         observer.start()
 
+    def get_room_id_by_lnum(self, lnum):
+        return self.lingr.rooms.keys()[lnum - 1]
+
     def select_room_by_lnum(self, lnum):
-        rooms = self.lingr.rooms.keys()
-        if lnum <= len(rooms):
-            self.select_room(rooms[lnum - 1])
+        self.select_room(self.get_room_id_by_lnum(lnum))
 
     def select_room_by_offset(self, offset):
         rooms = self.lingr.rooms.keys()
@@ -114,6 +117,12 @@ class LingrVim(object):
         if room_id in rooms and self.current_room_id != room_id:
             self.current_room_id = room_id
             self.render_all()
+
+    def get_member_id_by_lnum(self, lnum):
+        members = self.lingr.rooms[self.current_room_id].members.values()
+        name = self.members_buffer[lnum - 1][:-2]
+
+        return [x for x in members if x.name == name][0].username
 
     def get_archives(self):
         messages = self.messages[self.current_room_id]
@@ -145,6 +154,12 @@ class LingrVim(object):
         for m in self.messages[self.current_room_id]:
             self._show_message(m)
 
+        room_name = self.lingr.rooms[self.current_room_id].name.encode('utf-8')
+        statusline = LingrVim.MESSAGES_STATUSLINE.format(room_name)
+        vim.command("call setbufvar({0.number}, '&statusline', '{1}')".format(\
+            self.messages_buffer, statusline))
+
+
     def _render_rooms(self):
         del self.rooms_buffer[:]
 
@@ -159,15 +174,24 @@ class LingrVim(object):
         del self.members_buffer[:]
 
         members = self.lingr.rooms[self.current_room_id].members.values()
-        members.sort(key=lambda x: not x.presence)
+        onlines = filter(lambda x: x.presence, members)
+        offlines = filter(lambda x: not x.presence, members)
 
-        for m in members:
+        for m in onlines:
             owner = '(owner)' if m.owner else ''
-            online = ' +' if m.presence else ' -'
-            text = m.name.encode('utf-8') + owner + online
+            text = m.name.encode('utf-8') + owner + " +"
+            self.members_buffer.append(text)
+
+        for m in offlines:
+            owner = '(owner)' if m.owner else ''
+            text = m.name.encode('utf-8') + owner + " -"
             self.members_buffer.append(text)
 
         del self.members_buffer[0]
+
+        statusline = LingrVim.MEMBERS_STATUSLINE.format(len(onlines), len(members))
+        vim.command("call setbufvar({0.number}, '&statusline', '{1}')".format(\
+            self.members_buffer, statusline))
 
     def _show_message(self, message):
         if message.type == "dummy":

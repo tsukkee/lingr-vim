@@ -63,6 +63,26 @@ EOM
 endfunction
 
 
+" Reference: wwwsearch.vim
+" (http://github.com/kana/config/blob/master/vim/dot.vim/autoload/wwwsearch.vim)
+function! lingr#open_url(url)
+    if !exists('g:lingr_command_to_open_url')
+        if has('mac') || has('macunix') || system('uname') =~? '^darwin'
+            let g:lingr_command_to_open_url = 'open %s'
+        elseif has('win32') || ('win64')
+            let g:lingr_command_to_open_url = 'start rundll32 url.dll,FileProtocolHandler %s'
+        else
+            " TODO: other OS support?
+            let g:lingr_command_to_open_url = ""
+        endif
+    endif
+
+    if match(a:url, '^https\?://[^ ]*') == 0 && g:lingr_command_to_open_url != ""
+        execute 'silent !' printf(g:lingr_command_to_open_url, a:url)
+    endif
+endfunction
+
+
 function! s:setup_buffer(command, bufname, filetype, after)
     execute a:command a:bufname
     let &filetype = a:filetype

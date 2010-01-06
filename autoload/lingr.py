@@ -130,7 +130,7 @@ class Connection(object):
             if self.auto_reconnect:
                 pass # TODO: retry
 
-        except (http.HTTPException, ValueError) as e:
+        except (httplib.HTTPException, ValueError) as e:
         # ValueError can be raised by json.loads
             self._on_error(e)
             if self.auto_reconnect:
