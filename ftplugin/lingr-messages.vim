@@ -43,7 +43,7 @@ function! s:open_url(url)
     endif
 
     if match(a:url, '^https\?://[^ ]*') == 0
-        call system(printf(g:lingr_command_to_open_url, a:url))
+        execute 'silent !' printf(g:lingr_command_to_open_url, a:url)
     endif
 endfunction
 
