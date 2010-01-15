@@ -4,7 +4,7 @@ endif
 
 " check +python
 if !has('python')
-    echoerr 'This plugin needs +python (python 2.6)'
+    echoerr 'This plugin needs +python (Python 2.6)'
     finish
 endif
 
@@ -24,13 +24,9 @@ if s:invalid_version
     finish
 endif
 
-" save cpo
-let s:cpo_save = &cpo
-set cpo&vim
-
 " define commands
 command! LingrLaunch call lingr#launch()
-command! -nargs=* LingrSay call lingr#say(<q-args>)
+" command! -nargs=* LingrSay call lingr#say(<q-args>)
 
 " append python path
 let s:path = expand('<sfile>:p:h:h') . '/autoload'
@@ -42,13 +38,5 @@ sys.path.append(vim.eval('s:path'))
 
 lingr_vim = None
 EOM
-
-" reset autocmd
-augroup plugin-lingr
-    autocmd!
-augroup END
-
-" restore
-let &cpo = s:cpo_save
 
 let g:loaded_lingr_vim = 1

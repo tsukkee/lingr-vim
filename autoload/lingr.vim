@@ -10,6 +10,7 @@ let s:SIDEBAR_WIDTH = 25
 let s:ROOMS_BUFFER_HEIGHT = 10
 let s:SAY_BUFFER_HEIGHT = 3
 let s:ARCHIVES_DELIMITER = "^--------------------"
+let s:URL_PATTERN = '^https\?://[^ ]*'
 
 function! lingr#launch()
     " get username and password
@@ -67,8 +68,12 @@ function! lingr#open_url(url)
         endif
     endif
 
-    if match(a:url, '^https\?://[^ ]*') == 0 && g:lingr_command_to_open_url != ""
+    if match(a:url, s:URL_PATTERN) == 0 && g:lingr_command_to_open_url != ""
+        echo "open url:" a:url . "..."
+        sleep 1m
+        redraw
         execute 'silent !' printf(g:lingr_command_to_open_url, shellescape(a:url, 'shell'))
+        echo "open url:" a:url . "... done"
     endif
 endfunction
 
@@ -97,8 +102,8 @@ function! s:setup_messages_buffer()
     autocmd WinEnter <buffer> silent $
 
     " mapping
-    nnoremap <silent> <buffer> <Plug>(lingr-messages-get-archives)
-                \ :<C-u>call <SID>get_archives()<CR>
+    nnoremap <silent> <buffer> <Plug>(lingr-messages-messages-buffer-action)
+                \ :<C-u>call <SID>messages_buffer_action()<CR>
     nnoremap <silent> <buffer> <Plug>(lingr-messages-search-delimiter-forward)
                 \ :<C-u>call <SID>search_delimiter('')<CR>
     nnoremap <silent> <buffer> <Plug>(lingr-messages-search-delimiter-backward)
@@ -114,7 +119,8 @@ function! s:setup_messages_buffer()
     nnoremap <silent> <buffer> <Plug>(lingr-messages-show-say-buffer)
                 \ :<C-u>call <SID>show_say_buffer()<CR>
 
-    nmap <silent> <buffer> <CR> <Plug>(lingr-messages-get-archives)
+    nmap <silent> <buffer> <CR> <Plug>(lingr-messages-messages-buffer-action)
+    nmap <silent> <buffer> <LeftRelease> <Plug>(lingr-messages-messages-buffer-action)
     nmap <silent> <buffer> } <Plug>(lingr-messages-search-delimiter-forward)
     nmap <silent> <buffer> { <Plug>(lingr-messages-search-delimiter-backward)
     nmap <silent> <buffer> <C-n> <Plug>(lingr-messages-select-next-room)
@@ -148,6 +154,7 @@ function! s:setup_members_buffer()
                 \ :<C-u>call <SID>open_member()<CR>
 
     nmap <buffer> <silent> o <Plug>(lingr-members-open-member)
+    nmap <buffer> <silent> <2-LeftMouse> <Plug>(lingr-members-open-member)
 
     " window size
     execute s:SIDEBAR_WIDTH 'wincmd |'
@@ -177,7 +184,9 @@ function! s:setup_rooms_buffer()
                 \ :<C-u>call <SID>open_room()<CR>
 
     nmap <buffer> <silent> <CR> <Plug>(lingr-rooms-select-room)
+    nmap <buffer> <silent> <LeftRelease> <Plug>(lingr-rooms-select-room)
     nmap <buffer> <silent> o <Plug>(lingr-rooms-open-room)
+    nmap <buffer> <silent> <2-LeftMouse> <Plug>(lingr-rooms-open-room)
 
     " window size
     execute s:ROOMS_BUFFER_HEIGHT 'wincmd _'
@@ -218,14 +227,24 @@ function! s:setup_say_buffer()
 endfunction
 
 " for messages buffer
-function! s:get_archives()
+function! s:messages_buffer_action()
     let [bufnum, lnum, col, off] = getpos('.')
     if lnum == 1
-        python <<EOM
+        call s:get_archives()
+    elseif match(expand('<cWORD>'), s:URL_PATTERN) == 0
+        call lingr#open_url(expand('<cWORD>'))
+    endif
+endfunction
+
+function! s:get_archives()
+    echo "Getting archives..."
+    sleep 1m
+    redraw
+    python <<EOM
 # coding=utf-8
 lingr_vim.get_archives()
 EOM
-    endif
+    echo "Getting archives... done!"
 endfunction
 
 function! s:search_delimiter(flags)

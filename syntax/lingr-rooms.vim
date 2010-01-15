@@ -2,8 +2,8 @@ if exists('b:current_syntax')
     finish
 endif
 
-syntax match lingrRoomsActive display /.*\ze \*$/
-syntax match lingrRoomsMarker display /\*$/
+syntax match lingrRoomsActive /.*\ze \*$/
+syntax match lingrRoomsMarker /\*$/
 
 highlight default link lingrRoomsActive Title
 highlight default link lingrRoomsMarker Ignore
