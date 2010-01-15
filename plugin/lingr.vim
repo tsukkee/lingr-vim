@@ -26,7 +26,6 @@ endif
 
 " define commands
 command! LingrLaunch call lingr#launch()
-" command! -nargs=* LingrSay call lingr#say(<q-args>)
 
 " append python path
 let s:path = expand('<sfile>:p:h:h') . '/autoload'
