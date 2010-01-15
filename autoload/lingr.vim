@@ -111,6 +111,8 @@ function! s:setup_messages_buffer()
                 \ :doautocmd WinEnter<CR>
     nnoremap <silent> <buffer> <Plug>(lingr-messages-open-url-under-cursor)
                 \ :<C-u>call lingr#open_url(expand('<cWORD>'))<CR>
+    nnoremap <silent> <buffer> <Plug>(lingr-messages-show-say-buffer)
+                \ :<C-u>call <SID>show_say_buffer()<CR>
 
     nmap <silent> <buffer> <CR> <Plug>(lingr-messages-get-archives)
     nmap <silent> <buffer> } <Plug>(lingr-messages-search-delimiter-forward)
@@ -118,6 +120,7 @@ function! s:setup_messages_buffer()
     nmap <silent> <buffer> <C-n> <Plug>(lingr-messages-select-next-room)
     nmap <silent> <buffer> <C-p> <Plug>(lingr-messages-select-prev-room)
     nmap <silent> <buffer> o <Plug>(lingr-messages-open-url-under-cursor)
+    nmap <silent> <buffer> s <Plug>(lingr-messages-show-say-buffer)
 
     " window size
     " nothing to do
@@ -197,10 +200,16 @@ function! s:setup_say_buffer()
 
     " autocmd
     autocmd! * <buffer>
-    autocmd WinLeave <buffer> close
-    autocmd BufLeave <buffer> close
+    autocmd WinLeave <buffer> call s:close_say_buffer()
+    autocmd BufLeave <buffer> call s:close_say_buffer()
 
     " mapping
+    nnoremap <buffer> <silent> <Plug>(lingr-say-say)
+                \ :<C-u>call <SID>say_buffer_contents()<CR>
+    nnoremap <buffer> <silent> <Plug>(lingr-say-close)
+                \ :<C-u>call <SID>close_say_buffer()<CR>
+    nmap <buffer> <silent> <CR> <Plug>(lingr-say-say)
+    nmap <buffer> <silent> <Esc> <Plug>(lingr-say-close)
 
     " window size
     execute s:SAY_BUFFER_HEIGHT 'wincmd _'
@@ -208,7 +217,7 @@ function! s:setup_say_buffer()
     return bufnr('')
 endfunction
 
-
+" for messages buffer
 function! s:get_archives()
     let [bufnum, lnum, col, off] = getpos('.')
     if lnum == 1
@@ -231,6 +240,7 @@ lingr_vim.select_room_by_offset(int(vim.eval("a:offset")))
 EOM
 endfunction
 
+" for members buffer
 function! s:open_member()
     python <<EOM
 # coding=utf-8
@@ -241,6 +251,7 @@ vim.command('call lingr#open_url("http://lingr.com/{0}")'.format(member_id))
 EOM
 endfunction
 
+" for rooms buffer
 function! s:select_room()
     python <<EOM
 # coding=utf-8
@@ -259,3 +270,22 @@ room_id = lingr_vim.get_room_id_by_lnum(int(lnum))
 vim.command('call lingr#open_url("http://lingr.com/room/{0}")'.format(room_id))
 EOM
 endfunction
+
+" for say buffer
+function! s:show_say_buffer()
+    call s:setup_say_buffer()
+    call feedkeys('A', 'n')
+endfunction
+
+function! s:close_say_buffer()
+    close
+endfunction
+
+function! s:say_buffer_contents()
+    let text = join(getline(0, line('$')), "\n")
+    call lingr#say(text)
+    normal! ggdG
+    call s:close_say_buffer()
+endfunction
+
+
