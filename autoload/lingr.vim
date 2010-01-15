@@ -54,14 +54,26 @@ lingr_vim.say(vim.eval('a:text'))
 EOM
 endfunction
 
-" Reference: wwwsearch.vim
-" (http://github.com/kana/config/blob/master/vim/dot.vim/autoload/wwwsearch.vim)
+" Reference:
+" http://github.com/kana/config/blob/master/vim/dot.vim/autoload/wwwsearch.vim
+" http://lingr.com/room/vim/archives/2010/01/15#message-157044
 function! lingr#open_url(url)
     if !exists('g:lingr_command_to_open_url')
+        " Mac
         if has('mac') || has('macunix') || system('uname') =~? '^darwin'
-            let g:lingr_command_to_open_url = 'open %s'
+            let g:lingr_command_to_open_url = 'open "%s"'
+        " Windows
         elseif has('win32') || ('win64')
-            let g:lingr_command_to_open_url = 'start rundll32 url.dll,FileProtocolHandler %s'
+            let g:lingr_command_to_open_url = 'start rundll32 url.dll,FileProtocolHandler "%s"'
+        " KDE
+        elseif exists('$KDE_FULL_SESSION') && $KDE_FULL_SESSION ==# 'true'
+            let g:lingr_command_to_open_url = 'kfmclient exec "%s" &'
+        " GNOME
+        elseif exists('$GNOME_DESKTOP_SESSION_ID')
+            let g:lingr_command_to_open_url = 'gnome-open "%s" &'
+        " Xfce
+        elseif executable(vimshell#getfilename('exo-open'))
+            let g:lingr_command_to_open_url = 'exo-open "%s" &'
         else
             " TODO: other OS support?
             let g:lingr_command_to_open_url = ""
