@@ -12,7 +12,10 @@ class LingrObserver(threading.Thread):
         self.lingr = lingr
 
     def run(self):
-        self.lingr.start()
+        try:
+            self.lingr.start()
+        except lingr.APIError as e:
+            echo_error(e.detail)
 
 
 def make_modifiable(buffer, func):
@@ -21,6 +24,10 @@ def make_modifiable(buffer, func):
         func(*args, **keywords)
         vim.command("call setbufvar({0.number}, '&modifiable', 0)".format(buffer))
     return do
+
+
+def echo_error(message):
+    vim.command('echoerr "lingr-vim error: {0}"'.format(message))
 
 
 class LingrVim(object):
