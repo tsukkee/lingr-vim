@@ -92,13 +92,8 @@ class LingrVim(object):
 
             self.current_room_id = sender.rooms.keys()[0]
 
-            # self.render_all()
-            self.queue_lock.acquire()
-            self.render_queue.append(\
-                    RenderOperation(RenderOperation.CONNECTED))
-            self.queue_lock.release()
-
-            vim.command('doautocmd CursorHold')
+            self.push_operation(RenderOperation(RenderOperation.CONNECTED))
+            vim.command('doautocmd CursorHold') # force to redraw contents
 
         def error_hook(sender, error):
             print "Lingr error: " + str(error)
@@ -106,34 +101,18 @@ class LingrVim(object):
         def message_hook(sender, room, message):
             self.messages[room.id].append(message)
             if self.current_room_id == room.id:
-                # self._show_message(message)
-                self.queue_lock.acquire()
-                self.render_queue.append(\
-                        RenderOperation(RenderOperation.MESSAGE,\
-                            {"message": message}))
-                self.queue_lock.release()
+                self.push_operation(RenderOperation(RenderOperation.MESSAGE,\
+                    {"message": message}))
 
         def join_hook(sender, room, member):
             if self.current_room_id == room.id:
-                # self.messages_buffer.append(\
-                    # LingrVim.JOIN_MESSAGE.format(member.name.encode('utf-8')))
-                # self.render_members()
-                self.queue_lock.acquire()
-                self.render_queue.append(\
-                        RenderOperation(RenderOperation.PRESENCE,\
-                            {"is_join": True, "member": member}))
-                self.queue_lock.release()
+                self.push_operation(RenderOperation(RenderOperation.PRESENCE,\
+                    {"is_join": True, "member": member}))
 
         def leave_hook(sender, room, member):
             if self.current_room_id == room.id:
-                # self.messages_buffer.append(\
-                    # LingrVim.LEAVE_MESSAGE.format(member.name.encode('utf-8')))
-                # self.render_members()
-                self.queue_lock.acquire()
-                self.render_queue.append(\
-                        RenderOperation(RenderOperation.PRESENCE,\
-                            {"is_join": False, "member": member}))
-                self.queue_lock.release()
+                self.push_operation(RenderOperation(RenderOperation.PRESENCE,\
+                    {"is_join": False, "member": member}))
 
         self.lingr.connected_hooks.append(connected_hook)
         self.lingr.error_hooks.append(error_hook)
@@ -266,6 +245,11 @@ class LingrVim(object):
             'text': '-',
             'timestamp': time.strftime(lingr.Message.TIMESTAMP_FORMAT, time.gmtime())
             })
+
+    def push_operation(self, operation):
+        self.queue_lock.acquire()
+        self.render_queue.append(operation)
+        self.queue_lock.release()
 
     def process_queue(self):
         self.queue_lock.acquire()
