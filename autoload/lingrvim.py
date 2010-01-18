@@ -18,6 +18,14 @@ class LingrObserver(threading.Thread):
             echo_error(e.detail)
 
 
+class RenderOperation(object):
+    CONNECTED, MESSAGE, PRESENCE = range(3)
+
+    def __init__(self, type, params = {}):
+        self.type = type
+        self.params = params
+
+
 def make_modifiable(buffer, func):
     def do(*args, **keywords):
         vim.command("call setbufvar({0.number}, '&modifiable', 1)".format(buffer))
@@ -55,15 +63,24 @@ class LingrVim(object):
             make_modifiable(self.members_buffer, self._render_members)
         self.render_rooms = \
             make_modifiable(self.rooms_buffer, self._render_rooms)
+        self.show_message = \
+            make_modifiable(self.messages_buffer, self._show_message)
+        self.show_presence_message = \
+            make_modifiable(self.messages_buffer, self._show_presence_message)
 
         # for display messages
         self.current_room_id = ""
         self.last_speaker_id = ""
         self.messages = {} # {"room1": [message1, message2], "room2": [message1 ...
 
+        # for threading
+        self.observer = None
+        self.render_queue = [] # for RenderOperation
+        self.queue_lock = threading.Lock()
+
     def __del__(self):
         self.lingr.destroy_session()
-        self.observe.join()
+        self.observer.join()
 
     def setup(self):
         def connected_hook(sender):
@@ -74,7 +91,14 @@ class LingrVim(object):
                     self.messages[id].append(m)
 
             self.current_room_id = sender.rooms.keys()[0]
-            self.render_all()
+
+            # self.render_all()
+            self.queue_lock.acquire()
+            self.render_queue.append(\
+                    RenderOperation(RenderOperation.CONNECTED))
+            self.queue_lock.release()
+
+            vim.command('doautocmd CursorHold')
 
         def error_hook(sender, error):
             print "Lingr error: " + str(error)
@@ -82,31 +106,43 @@ class LingrVim(object):
         def message_hook(sender, room, message):
             self.messages[room.id].append(message)
             if self.current_room_id == room.id:
-                self._show_message(message)
+                # self._show_message(message)
+                self.queue_lock.acquire()
+                self.render_queue.append(\
+                        RenderOperation(RenderOperation.MESSAGE,\
+                            {"message": message}))
+                self.queue_lock.release()
 
         def join_hook(sender, room, member):
             if self.current_room_id == room.id:
-                self.messages_buffer.append(\
-                    LingrVim.JOIN_MESSAGE.format(member.name.encode('utf-8')))
-                self.render_members()
+                # self.messages_buffer.append(\
+                    # LingrVim.JOIN_MESSAGE.format(member.name.encode('utf-8')))
+                # self.render_members()
+                self.queue_lock.acquire()
+                self.render_queue.append(\
+                        RenderOperation(RenderOperation.PRESENCE,\
+                            {"is_join": True, "member": member}))
+                self.queue_lock.release()
 
         def leave_hook(sender, room, member):
             if self.current_room_id == room.id:
-                self.messages_buffer.append(\
-                    LingrVim.LEAVE_MESSAGE.format(member.name.encode('utf-8')))
-                self.render_members()
+                # self.messages_buffer.append(\
+                    # LingrVim.LEAVE_MESSAGE.format(member.name.encode('utf-8')))
+                # self.render_members()
+                self.queue_lock.acquire()
+                self.render_queue.append(\
+                        RenderOperation(RenderOperation.PRESENCE,\
+                            {"is_join": False, "member": member}))
+                self.queue_lock.release()
 
         self.lingr.connected_hooks.append(connected_hook)
         self.lingr.error_hooks.append(error_hook)
-        self.lingr.message_hooks.append(\
-            make_modifiable(self.messages_buffer, message_hook))
-        self.lingr.join_hooks.append(\
-            make_modifiable(self.messages_buffer, join_hook))
-        self.lingr.leave_hooks.append(\
-            make_modifiable(self.messages_buffer, leave_hook))
+        self.lingr.message_hooks.append(message_hook)
+        self.lingr.join_hooks.append(join_hook)
+        self.lingr.leave_hooks.append(leave_hook)
 
-        observer = LingrObserver(self.lingr)
-        observer.start()
+        self.observer = LingrObserver(self.lingr)
+        self.observer.start()
 
     def get_room_id_by_lnum(self, lnum):
         return self.lingr.rooms.keys()[lnum - 1]
@@ -214,6 +250,12 @@ class LingrVim(object):
             for text in message.text.split("\n"):
                 self.messages_buffer.append(' ' + text.encode('utf-8'))
 
+    def _show_presence_message(self, is_join, member):
+        format = LingrVim.JOIN_MESSAGE if is_join\
+            else LingrVim.LEAVE_MESSAGE
+        self.messages_buffer.append(\
+            format.format(member.name.encode('utf-8')))
+
     def _dummy_message(self):
         return lingr.Message({
             'id': '-1',
@@ -224,3 +266,19 @@ class LingrVim(object):
             'text': '-',
             'timestamp': time.strftime(lingr.Message.TIMESTAMP_FORMAT, time.gmtime())
             })
+
+    def process_queue(self):
+        self.queue_lock.acquire()
+        for op in self.render_queue:
+            if op.type == RenderOperation.CONNECTED:
+                self.render_all()
+
+            elif op.type == RenderOperation.MESSAGE:
+                self.show_message(op.params["message"])
+
+            elif op.type == RenderOperation.PRESENCE:
+                self.show_presence_message(op.params["is_join"], op.params["member"])
+                self.render_members()
+
+        self.render_queue = []
+        self.queue_lock.release()

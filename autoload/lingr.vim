@@ -11,6 +11,7 @@ let s:ROOMS_BUFFER_HEIGHT = 10
 let s:SAY_BUFFER_HEIGHT = 3
 let s:ARCHIVES_DELIMITER = "^--------------------"
 let s:URL_PATTERN = '^https\?://[^ ]*'
+let s:UPDATE_TIME = 500
 
 function! lingr#launch()
     " get username and password
@@ -45,6 +46,11 @@ lingr_vim = lingrvim.LingrVim(\
 
 lingr_vim.setup()
 EOM
+
+    augroup plugin-lingr-vim
+        autocmd!
+        autocmd CursorHold * silent call s:rendering()
+    augroup END
 endfunction
 
 function! lingr#say(text)
@@ -112,6 +118,9 @@ function! s:setup_messages_buffer()
     " autocmd
     autocmd! * <buffer>
     autocmd WinEnter <buffer> silent $
+    autocmd BufEnter <buffer> silent call s:set_updatetime()
+    autocmd BufLeave <buffer> silent call s:reset_updatetime()
+    autocmd CursorHold <buffer> silent call feedkeys("\<C-l>", 'n')
 
     " mapping
     nnoremap <silent> <buffer> <Plug>(lingr-messages-messages-buffer-action)
@@ -160,6 +169,9 @@ function! s:setup_members_buffer()
 
     " autocmd
     autocmd! * <buffer>
+    autocmd BufEnter <buffer> silent call s:set_updatetime()
+    autocmd BufLeave <buffer> silent call s:reset_updatetime()
+    autocmd CursorHold <buffer> silent call feedkeys("\<C-l>", 'n')
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-members-open-member)
@@ -188,6 +200,9 @@ function! s:setup_rooms_buffer()
 
     " autocmd
     autocmd! * <buffer>
+    autocmd BufEnter <buffer> silent call s:set_updatetime()
+    autocmd BufLeave <buffer> silent call s:reset_updatetime()
+    autocmd CursorHold <buffer> silent call feedkeys("\<C-l>", 'n')
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-rooms-select-room)
@@ -223,6 +238,9 @@ function! s:setup_say_buffer()
     autocmd! * <buffer>
     autocmd WinLeave <buffer> call s:close_say_buffer()
     autocmd BufLeave <buffer> call s:close_say_buffer()
+    autocmd BufEnter <buffer> silent call s:set_updatetime()
+    autocmd BufLeave <buffer> silent call s:reset_updatetime()
+    autocmd CursorHold <buffer> silent call feedkeys("\<C-l>", 'n')
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-say-say)
@@ -319,4 +337,20 @@ function! s:say_buffer_contents()
     call s:close_say_buffer()
 endfunction
 
+function! s:set_updatetime()
+    let b:saved_updatetime = &updatetime
+    let &updatetime = s:UPDATE_TIME
+endfunction
 
+function! s:reset_updatetime()
+    if exists('b:saved_updatetime')
+        let &updatetime = b:saved_updatetime
+    endif
+endfunction
+
+function! s:rendering()
+    python <<EOM
+# coding=utf-8
+lingr_vim.process_queue()
+EOM
+endfunction
