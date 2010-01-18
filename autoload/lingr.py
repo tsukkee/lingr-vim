@@ -105,7 +105,6 @@ class Connection(object):
 
         self.session = None
         self.room_ids = []
-        self.connection = None
 
     def __del__(self):
         pass
@@ -154,10 +153,6 @@ class Connection(object):
 
     def destroy_session(self):
         try:
-            if self.connection:
-                self.connection.close()
-                self.connection = None
-
             self._debug("requesting session/destroy")
             res = self._post("session/destroy", {"session": self.session})
             self._debug("session/destroy response: " + str(res))
@@ -284,8 +279,6 @@ class Connection(object):
             url += '?' + urllib.urlencode(params)
 
         connection = httplib.HTTPConnection(domain, timeout=Connection.REQUEST_TIMEOUT)
-        if is_observe:
-            self.connection = connection
         try:
             connection.request("GET", url, headers=Connection.HEADERS)
             res = json.loads(connection.getresponse().read())
@@ -296,8 +289,6 @@ class Connection(object):
                 raise e
 
         connection.close()
-        if is_observe:
-            self.connection = None
 
         if res["status"] == "ok":
             return res

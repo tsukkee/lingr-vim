@@ -127,7 +127,7 @@ class LingrVim(object):
 
     def get_member_id_by_lnum(self, lnum):
         members = self.lingr.rooms[self.current_room_id].members.values()
-        name = self.members_buffer[lnum - 1][:-2]
+        name = self.members_buffer[lnum - 1][:-2] # TODO: fix for owner
 
         return [x for x in members if x.name == name][0].username
 
@@ -165,7 +165,6 @@ class LingrVim(object):
         statusline = LingrVim.MESSAGES_STATUSLINE.format(room_name)
         vim.command("call setbufvar({0.number}, '&statusline', '{1}')".format(\
             self.messages_buffer, statusline))
-
 
     def _render_rooms(self):
         del self.rooms_buffer[:]
