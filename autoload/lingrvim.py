@@ -76,7 +76,7 @@ class LingrVim(object):
         self.last_speaker_id = ""
         self.messages = {} # {"room1": [message1, message2], "room2": [message1 ...
         self.has_unread = {} # {"room1": True, "room2": False ...
-        self.focused_room = None
+        self.focused_buffer = None
 
         # for threading
         self.render_queue = [] # for RenderOperation
@@ -98,7 +98,12 @@ class LingrVim(object):
 
             self.push_operation(RenderOperation(RenderOperation.CONNECTED))
             vim.command('doautocmd CursorHold') # force to redraw contents
-            self.focused_room = self.current_room_id
+
+            current_bufnr = int(vim.eval("bufnr('')"))
+            if self.messages_buffer.number == current_bufnr\
+                or self.members_buffer.number == current_bufnr\
+                or self.rooms_buffer.number == current_bufnr:
+                self.focused_buffer = vim.eval("bufname('')")
 
             vim.command("echo 'Launching Lingr-Vim... done!'")
 
@@ -110,7 +115,7 @@ class LingrVim(object):
             if self.current_room_id == room.id:
                 self.push_operation(RenderOperation(RenderOperation.MESSAGE,\
                     {"message": message}))
-            if self.focused_room != room.id:
+            if not self.focused_buffer or self.current_room_id != room.id:
                 self.has_unread[room.id] = True
                 self.push_operation(RenderOperation(RenderOperation.UNREAD, {}))
 
@@ -136,13 +141,13 @@ class LingrVim(object):
         if self.lingr.is_alive:
             self.lingr.destroy_session()
 
-    def set_focus(self, is_focused):
-        if is_focused:
-            self.focused_room = self.current_room_id
+    def set_focus(self, focused):
+        if focused:
+            self.focused_buffer = focused
             self.has_unread[self.current_room_id] = False
             self.render_rooms()
         else:
-            self.focused_room = None
+            self.focused_buffer = None
 
     def get_room_id_by_lnum(self, lnum):
         return self.lingr.rooms.keys()[lnum - 1]
@@ -159,7 +164,6 @@ class LingrVim(object):
         rooms = self.lingr.rooms.keys()
         if room_id in rooms and self.current_room_id != room_id:
             self.current_room_id = room_id
-            self.focused_room = room_id
             self.has_unread[room_id] = False
             self.render_all()
 
@@ -254,6 +258,9 @@ class LingrVim(object):
             # vim.buffer.append() cannot receive newlines
             for text in message.text.split("\n"):
                 self.messages_buffer.append(' ' + text.encode('utf-8'))
+
+            if self.focused_buffer:
+                vim.command('doautocmd User lingr-vim-received-in-' + self.focused_buffer)
 
     def _show_presence_message(self, is_join, member):
         format = LingrVim.JOIN_MESSAGE if is_join\

@@ -13,6 +13,7 @@ let s:SAY_BUFFER_HEIGHT = 3
 let s:ARCHIVES_DELIMITER = "^--------------------"
 let s:URL_PATTERN = '^https\?://[^ ]*'
 let s:UPDATE_TIME = 500
+let s:REMAIN_HEIGHT_TO_AUTO_SCROLL = 20
 " }}}
 
 " Interface {{{
@@ -140,8 +141,8 @@ function! s:setup_buffer_base()
 
     " autocmd
     autocmd! * <buffer>
-    autocmd BufEnter <buffer> call s:on_buffer_enter()
-    autocmd BufLeave <buffer> call s:on_buffer_leave()
+    autocmd BufEnter <buffer> silent call s:on_buffer_enter()
+    autocmd BufLeave <buffer> silent call s:on_buffer_leave()
     autocmd CursorHold <buffer> silent call feedkeys("\<C-l>", 'n')
 endfunction
 
@@ -157,6 +158,10 @@ function! s:setup_messages_buffer()
 
     " autocmd
     autocmd WinEnter <buffer> silent $
+    autocmd User lingr-vim-received-in-lingr-messages
+                \ if line('$') - getpos('.')[1] < s:REMAIN_HEIGHT_TO_AUTO_SCROLL
+                \|    silent $
+                \|endif
 
     " mapping
     nnoremap <silent> <buffer> <Plug>(lingr-messages-messages-buffer-action)
@@ -256,7 +261,7 @@ function! s:setup_say_buffer()
     setlocal nobuflisted
 
     " autocmd
-    autocmd WinLeave <buffer> call s:close_say_buffer()
+    " nothing to do
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-say-say)
@@ -279,7 +284,7 @@ function! s:on_buffer_enter()
 # coding=utf-8
 # after lingr_vim has initialized
 if lingr_vim and lingr_vim.current_room_id:
-    lingr_vim.set_focus(True)
+    lingr_vim.set_focus(vim.eval("bufname('')"))
 EOM
     " set 'updatetime'
     let b:saved_updatetime = &updatetime
@@ -291,7 +296,7 @@ function! s:on_buffer_leave()
 # coding=utf-8
 # after lingr_vim has initialized
 if lingr_vim and lingr_vim.current_room_id:
-    lingr_vim.set_focus(False)
+    lingr_vim.set_focus(None)
 EOM
     " reset 'updatetime'
     if exists('b:saved_updatetime')
