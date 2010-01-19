@@ -252,6 +252,9 @@ class LingrVim(object):
         self.queue_lock.release()
 
     def process_queue(self):
+        if len(self.render_queue) == 0:
+            return
+
         self.queue_lock.acquire()
         for op in self.render_queue:
             if op.type == RenderOperation.CONNECTED:
