@@ -34,7 +34,7 @@ class LingrVim(object):
     JOIN_MESSAGE = "-- {0} is now online"
     LEAVE_MESSAGE = "-- {0} is now offline"
     GET_ARCHIVES_MESSAGE = "[Read more from archives...]"
-    MESSAGE_HEADER = "{0} ({1}):"
+    MESSAGE_HEADER = "{0}({1}):"
     ARCHIVES_DELIMITER = "--------------------"
     MEMBERS_STATUSLINE = "lingr-members ({0}/{1})"
     MESSAGES_STATUSLINE = "lingr-messages ({0})"
@@ -212,8 +212,10 @@ class LingrVim(object):
             self.messages_buffer.append(LingrVim.ARCHIVES_DELIMITER)
         else:
             if self.last_speaker_id != message.speaker_id:
-                text = LingrVim.MESSAGE_HEADER.format(\
-                    message.nickname.encode('utf-8'), time.asctime(message.timestamp))
+                name = message.nickname.encode('utf-8')
+                mine = "*" if message.speaker_id == self.lingr.username else " "
+                t = time.asctime(message.timestamp) # TODO: customize time format
+                text = LingrVim.MESSAGE_HEADER.format(name + mine, t)
                 self.messages_buffer.append(text)
                 self.last_speaker_id = message.speaker_id
 

@@ -3,12 +3,17 @@ if exists('b:current_syntax')
 endif
 
 syntax match lingrMessagesGetArchives /\%1l.*/
-syntax match lingrMessagesHeader /^[^ ].* (.*):$/
-           \ contains=lingrMessagesSpeaker,lingrMessagesTimestamp
-syntax match lingrMessagesSpeaker /^[^ ][^(]*/ contained
+syntax match lingrMessagesHeader /^[^ ].*(.*):$/
+           \ contains=lingrMessagesMine,lingrMessagesMineMarker,
+           \          lingrMessagesSpeaker,lingrMessagesTimestamp
+syntax match lingrMessagesMine /^.*\ze\*(/ contained
+syntax match lingrMessagesMineMarker /\*\ze(/ contained
+syntax match lingrMessagesSpeaker /^.*\ze (/ contained
 syntax match lingrMessagesTimestamp /(.*)/ contained
 syntax match lingrMessagesChangePresence /^-- .*/
 
+highlight default link lingrMessagesMine Identifier
+highlight default link lingrMessagesMineMarker Ignore
 highlight default link lingrMessagesSpeaker Title
 highlight default link lingrMessagesTimestamp Statement
 highlight default link lingrMessagesGetArchives Constant
