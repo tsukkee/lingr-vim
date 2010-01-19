@@ -27,7 +27,7 @@ def make_modifiable(buffer, func):
 
 
 def echo_error(message):
-    vim.command('echoerr "lingr-vim error: {0}"'.format(message))
+    vim.command('echoerr "Lingr-Vim Error: {0}"'.format(message))
 
 
 class LingrVim(object):
@@ -77,7 +77,7 @@ class LingrVim(object):
             self.render_all()
 
         def error_hook(sender, error):
-            print "Lingr error: " + str(error)
+            echo_error(str(error))
 
         def message_hook(sender, room, message):
             self.messages[room.id].append(message)
