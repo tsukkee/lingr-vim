@@ -67,6 +67,10 @@ function! lingr#exit()
     sleep 1m
     redraw
 
+    augroup plugin-lingr-vim
+        autocmd!
+    augroup END
+
     python <<EOM
 # coding=utf-8
 if lingr_vim:
