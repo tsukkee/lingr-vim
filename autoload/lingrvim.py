@@ -105,12 +105,16 @@ class LingrVim(object):
                 self.messages_buffer.append(\
                     LingrVim.JOIN_MESSAGE.format(member.name.encode('utf-8')))
                 self.render_members()
+                if self.focused_buffer:
+                    vim.command('doautocmd User lingr-vim-received-in-' + self.focused_buffer)
 
         def leave_hook(sender, room, member):
             if self.current_room_id == room.id:
                 self.messages_buffer.append(\
                     LingrVim.LEAVE_MESSAGE.format(member.name.encode('utf-8')))
                 self.render_members()
+                if self.focused_buffer:
+                    vim.command('doautocmd User lingr-vim-received-in-' + self.focused_buffer)
 
         self.lingr.connected_hooks.append(connected_hook)
         self.lingr.error_hooks.append(error_hook)
