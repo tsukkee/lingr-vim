@@ -13,13 +13,13 @@ let s:ARCHIVES_DELIMITER = "^--------------------"
 let s:URL_PATTERN = '^https\?://[^ ]*'
 let s:UPDATE_TIME = 500
 
-function! lingr#launch()
+function! lingr#launch(use_setting)
     " get username and password
-    let user = exists('g:lingr_vim_user')
+    let user = a:use_setting && exists('g:lingr_vim_user')
                 \ ? g:lingr_vim_user
                 \ : input('Lingr username? ')
 
-    let password = exists('g:lingr_vim_password')
+    let password = a:use_setting && exists('g:lingr_vim_password')
                 \ ? g:lingr_vim_password
                 \ : inputsecret('Lingr password? ')
 

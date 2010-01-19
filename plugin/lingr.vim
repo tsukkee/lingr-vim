@@ -25,7 +25,7 @@ if s:invalid_version
 endif
 
 " define commands
-command! LingrLaunch call lingr#launch()
+command! -bang LingrLaunch call lingr#launch(<bang>1)
 
 " append python path
 let s:path = expand('<sfile>:p:h:h') . '/autoload'
