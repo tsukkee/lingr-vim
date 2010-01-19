@@ -52,9 +52,12 @@ class LingrVim(object):
         self.lingr = lingr.Connection(user, password, False)
 
         # buffers
-        self.messages_buffer = vim.buffers[messages_bufnr - 1]
-        self.members_buffer = vim.buffers[members_bufnr - 1]
-        self.rooms_buffer = vim.buffers[rooms_bufnr - 1]
+        # indices of vim.buffers are different from bufnrs
+        def find_buffer(bufnr):
+            return [b for b in vim.buffers if b.number == bufnr][0]
+        self.messages_buffer = find_buffer(messages_bufnr)
+        self.members_buffer = find_buffer(members_bufnr)
+        self.rooms_buffer = find_buffer(rooms_bufnr)
 
         # generate render functions
         self.render_messages = \
