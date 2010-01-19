@@ -1,3 +1,4 @@
+" Constants {{{
 let s:MESSAGES_BUFNAME = 'lingr-messages'
 let s:MESSAGES_FILETYPE = 'lingr-messages'
 let s:ROOMS_BUFNAME = 'lingr-rooms'
@@ -11,7 +12,9 @@ let s:ROOMS_BUFFER_HEIGHT = 10
 let s:SAY_BUFFER_HEIGHT = 3
 let s:ARCHIVES_DELIMITER = "^--------------------"
 let s:URL_PATTERN = '^https\?://[^ ]*'
+" }}}
 
+" Interface {{{
 function! lingr#launch(use_setting)
     " get username and password
     let user = a:use_setting && exists('g:lingr_vim_user')
@@ -114,22 +117,12 @@ function! lingr#open_url(url)
         echo "open url:" a:url . "... done!"
     endif
 endfunction
+" }}}
 
-
-function! s:setup_buffer(command, bufname, filetype, after)
-    execute a:command a:bufname
-    let &filetype = a:filetype
-    execute a:after
-    return bufnr('')
-endfunction
-
-function! s:setup_messages_buffer()
-    " split
-    execute 'edit' s:MESSAGES_BUFNAME
-    let &filetype = s:MESSAGES_FILETYPE
-
+" Private functions {{{
+" setup buffer {{{
+function! s:setup_buffer_base()
     " option
-    setlocal statusline=lingr-messages
     setlocal buftype=nofile
     setlocal noswapfile
     setlocal bufhidden=hide
@@ -137,6 +130,21 @@ function! s:setup_messages_buffer()
 
     " autocmd
     autocmd! * <buffer>
+    autocmd BufEnter <buffer> call s:on_buffer_enter()
+    autocmd BufLeave <buffer> call s:on_buffer_leave()
+endfunction
+
+function! s:setup_messages_buffer()
+    " split
+    execute 'edit' s:MESSAGES_BUFNAME
+    let &filetype = s:MESSAGES_FILETYPE
+
+    call s:setup_buffer_base()
+
+    " option
+    setlocal statusline=lingr-messages
+
+    " autocmd
     autocmd WinEnter <buffer> silent $
 
     " mapping
@@ -152,8 +160,6 @@ function! s:setup_messages_buffer()
     nnoremap <silent> <buffer> <Plug>(lingr-messages-select-prev-room)
                 \ :<C-u>call <SID>select_room_by_offset(- v:count1)<CR>
                 \ :doautocmd WinEnter<CR>
-    nnoremap <silent> <buffer> <Plug>(lingr-messages-open-url-under-cursor)
-                \ :<C-u>call lingr#open_url(expand('<cWORD>'))<CR>
     nnoremap <silent> <buffer> <Plug>(lingr-messages-show-say-buffer)
                 \ :<C-u>call <SID>show_say_buffer()<CR>
 
@@ -163,7 +169,6 @@ function! s:setup_messages_buffer()
     nmap <silent> <buffer> { <Plug>(lingr-messages-search-delimiter-backward)
     nmap <silent> <buffer> <C-n> <Plug>(lingr-messages-select-next-room)
     nmap <silent> <buffer> <C-p> <Plug>(lingr-messages-select-prev-room)
-    nmap <silent> <buffer> o <Plug>(lingr-messages-open-url-under-cursor)
     nmap <silent> <buffer> s <Plug>(lingr-messages-show-say-buffer)
 
     " window size
@@ -177,15 +182,13 @@ function! s:setup_members_buffer()
     execute 'topleft vsplit' s:MEMBERS_BUFNAME
     let &filetype = s:MEMBERS_FILETYPE
 
+    call s:setup_buffer_base()
+
     " option
     setlocal statusline=lingr-members
-    setlocal buftype=nofile
-    setlocal noswapfile
-    setlocal bufhidden=hide
-    setlocal foldcolumn=0
 
     " autocmd
-    autocmd! * <buffer>
+    " nothing to do
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-members-open-member)
@@ -205,15 +208,13 @@ function! s:setup_rooms_buffer()
     execute 'leftabove split' s:ROOMS_BUFNAME
     let &filetype = s:ROOMS_FILETYPE
 
+    call s:setup_buffer_base()
+
     " option
     setlocal statusline=lingr-rooms
-    setlocal buftype=nofile
-    setlocal noswapfile
-    setlocal bufhidden=hide
-    setlocal foldcolumn=0
 
     " autocmd
-    autocmd! * <buffer>
+    " nothing to do
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-rooms-select-room)
@@ -237,18 +238,14 @@ function! s:setup_say_buffer()
     execute 'rightbelow split' s:SAY_BUFNAME
     let &filetype = s:SAY_FILETYPE
 
+    call s:setup_buffer_base()
+
     " option
     setlocal statusline=lingr-say
-    setlocal buftype=nofile
-    setlocal noswapfile
-    setlocal bufhidden=hide
-    setlocal foldcolumn=0
     setlocal nobuflisted
 
     " autocmd
-    autocmd! * <buffer>
     autocmd WinLeave <buffer> call s:close_say_buffer()
-    autocmd BufLeave <buffer> call s:close_say_buffer()
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-say-say)
@@ -263,8 +260,29 @@ function! s:setup_say_buffer()
 
     return bufnr('')
 endfunction
+" }}}
 
-" for messages buffer
+" for all buffer {{{
+function! s:on_buffer_enter()
+    python <<EOM
+# coding=utf-8
+# after lingr_vim has initialized
+if lingr_vim and lingr_vim.current_room_id:
+    lingr_vim.set_focus(True)
+EOM
+endfunction
+
+function! s:on_buffer_leave()
+    python <<EOM
+# coding=utf-8
+# after lingr_vim has initialized
+if lingr_vim and lingr_vim.current_room_id:
+    lingr_vim.set_focus(False)
+EOM
+endfunction
+" }}}
+
+" for messages buffer {{{
 function! s:messages_buffer_action()
     let [bufnum, lnum, col, off] = getpos('.')
     if lnum == 1
@@ -296,8 +314,9 @@ import vim
 lingr_vim.select_room_by_offset(int(vim.eval("a:offset")))
 EOM
 endfunction
+" }}}
 
-" for members buffer
+" for members buffer {{{
 function! s:open_member()
     python <<EOM
 # coding=utf-8
@@ -307,8 +326,9 @@ member_id = lingr_vim.get_member_id_by_lnum(int(lnum))
 vim.command('call lingr#open_url("http://lingr.com/{0}")'.format(member_id))
 EOM
 endfunction
+" }}}
 
-" for rooms buffer
+" for rooms buffer {{{
 function! s:select_room()
     python <<EOM
 # coding=utf-8
@@ -327,8 +347,9 @@ room_id = lingr_vim.get_room_id_by_lnum(int(lnum))
 vim.command('call lingr#open_url("http://lingr.com/room/{0}")'.format(room_id))
 EOM
 endfunction
+" }}}
 
-" for say buffer
+" for say buffer {{{
 function! s:show_say_buffer()
     call s:setup_say_buffer()
     call feedkeys('A', 'n')
@@ -344,5 +365,6 @@ function! s:say_buffer_contents()
     normal! ggdG
     call s:close_say_buffer()
 endfunction
+" }}}
 
-
+" }}}

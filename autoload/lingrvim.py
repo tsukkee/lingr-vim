@@ -63,6 +63,8 @@ class LingrVim(object):
         self.current_room_id = ""
         self.last_speaker_id = ""
         self.messages = {} # {"room1": [message1, message2], "room2": [message1 ...
+        self.has_unread = {} # {"room1": True, "room2": False ...
+        self.focused_room = None
 
     def __del__(self):
         self.destroy()
@@ -74,8 +76,10 @@ class LingrVim(object):
                 self.messages[id] = []
                 for m in room.backlog:
                     self.messages[id].append(m)
+                self.has_unread[id] = False
 
             self.current_room_id = sender.rooms.keys()[0]
+            self.focused_room = self.current_room_id
             self.render_all()
 
             vim.command("echo 'Launching Lingr-Vim... done!'")
@@ -87,6 +91,9 @@ class LingrVim(object):
             self.messages[room.id].append(message)
             if self.current_room_id == room.id:
                 self._show_message(message)
+            if self.focused_room != room.id:
+                self.has_unread[room.id] = True
+                self.render_rooms()
 
         def join_hook(sender, room, member):
             if self.current_room_id == room.id:
@@ -115,6 +122,14 @@ class LingrVim(object):
         if self.lingr.is_alive:
             self.lingr.destroy_session()
 
+    def set_focus(self, is_focused):
+        if is_focused:
+            self.focused_room = self.current_room_id
+            self.has_unread[self.current_room_id] = False
+            self.render_rooms()
+        else:
+            self.focused_room = None
+
     def get_room_id_by_lnum(self, lnum):
         return self.lingr.rooms.keys()[lnum - 1]
 
@@ -130,6 +145,8 @@ class LingrVim(object):
         rooms = self.lingr.rooms.keys()
         if room_id in rooms and self.current_room_id != room_id:
             self.current_room_id = room_id
+            self.focused_room = room_id
+            self.has_unread[room_id] = False
             self.render_all()
 
     def get_member_id_by_lnum(self, lnum):
@@ -178,7 +195,8 @@ class LingrVim(object):
 
         for id, room in self.lingr.rooms.iteritems():
             mark = " *" if id == self.current_room_id else ""
-            text = room.name.encode('utf-8') + mark
+            has_unread = " (*)" if self.has_unread[id] else ""
+            text = room.name.encode('utf-8') + mark + has_unread
             self.rooms_buffer.append(text)
 
         del self.rooms_buffer[0]
