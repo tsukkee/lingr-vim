@@ -108,6 +108,8 @@ class Connection(object):
         self.session = None
         self.room_ids = []
 
+        self.is_alive = False
+
     def start(self):
         try:
             self.create_session()
@@ -118,7 +120,7 @@ class Connection(object):
             for h in self.connected_hooks:
                 h(self)
 
-            while(True):
+            while(self.is_alive):
                 self.observe()
 
         except APIError as e:
@@ -148,6 +150,7 @@ class Connection(object):
             self.name = user["name"]
             self.username = user["username"]
         self.rooms = {}
+        self.is_alive = True
         return res
 
     def destroy_session(self):
@@ -163,6 +166,7 @@ class Connection(object):
             self.name = None
             self.username = None
             self.rooms = {}
+            self.is_alive = False
             return res
         except Exception as e:
             self._log_error(str(e))

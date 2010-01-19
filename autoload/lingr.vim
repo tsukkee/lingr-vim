@@ -23,10 +23,14 @@ function! lingr#launch(use_setting)
                 \ ? g:lingr_vim_password
                 \ : inputsecret('Lingr password? ')
 
+    echo "Launching Lingr-Vim..."
+    sleep 1m
+    redraw
+
     wincmd o
-    let messages_bufnr = s:setup_messages_buffer()
-    let members_bufnr = s:setup_members_buffer()
-    let rooms_bufnr = s:setup_rooms_buffer()
+    let s:messages_bufnr = s:setup_messages_buffer()
+    let s:members_bufnr = s:setup_members_buffer()
+    let s:rooms_bufnr = s:setup_rooms_buffer()
 
     " import lingrvim
     python <<EOM
@@ -35,14 +39,14 @@ import lingr
 import lingrvim
 
 if lingr_vim:
-    del lingr_vim
+    lingr_vim.destroy()
 
 lingr_vim = lingrvim.LingrVim(\
     vim.eval('user'),\
     vim.eval('password'),\
-    int(vim.eval('messages_bufnr')),\
-    int(vim.eval('members_bufnr')),\
-    int(vim.eval('rooms_bufnr')))
+    int(vim.eval('s:messages_bufnr')),\
+    int(vim.eval('s:members_bufnr')),\
+    int(vim.eval('s:rooms_bufnr')))
 
 lingr_vim.setup()
 EOM
@@ -51,6 +55,28 @@ EOM
         autocmd!
         autocmd CursorHold * silent call s:rendering()
     augroup END
+
+    command! LingrExit call lingr#exit()
+endfunction
+
+function! lingr#exit()
+    echo "Exiting Lingr-Vim..."
+    sleep 1m
+    redraw
+
+    python <<EOM
+# coding=utf-8
+if lingr_vim:
+    lingr_vim.destroy()
+EOM
+
+    silent! delcommand LingrExit
+
+    silent! execute 'bwipeout' s:messages_bufnr
+    silent! execute 'bwipeout' s:members_bufnr
+    silent! execute 'bwipeout' s:rooms_bufnr
+
+    echo "Exiting Lingr-Vim... done!"
 endfunction
 
 function! lingr#say(text)
@@ -91,7 +117,7 @@ function! lingr#open_url(url)
         sleep 1m
         redraw
         execute 'silent !' printf(g:lingr_command_to_open_url, shellescape(a:url, 'shell'))
-        echo "open url:" a:url . "... done"
+        echo "open url:" a:url . "... done!"
     endif
 endfunction
 

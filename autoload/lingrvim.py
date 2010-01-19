@@ -79,8 +79,7 @@ class LingrVim(object):
         self.queue_lock = threading.Lock()
 
     def __del__(self):
-        self.lingr.destroy_session()
-        self.observer.join()
+        self.destroy()
 
     def setup(self):
         def connected_hook(sender):
@@ -94,6 +93,8 @@ class LingrVim(object):
 
             self.push_operation(RenderOperation(RenderOperation.CONNECTED))
             vim.command('doautocmd CursorHold') # force to redraw contents
+
+            vim.command("echo 'Launching Lingr-Vim... done!'")
 
         def error_hook(sender, error):
             echo_error(str(error))
@@ -120,8 +121,11 @@ class LingrVim(object):
         self.lingr.join_hooks.append(join_hook)
         self.lingr.leave_hooks.append(leave_hook)
 
-        self.observer = LingrObserver(self.lingr)
-        self.observer.start()
+        LingrObserver(self.lingr).start()
+
+    def destroy(self):
+        if self.lingr.is_alive:
+            self.lingr.destroy_session()
 
     def get_room_id_by_lnum(self, lnum):
         return self.lingr.rooms.keys()[lnum - 1]
