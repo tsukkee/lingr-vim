@@ -3,11 +3,12 @@
 # This code is based on lingr.rb at below URL
 # http://github.com/psychs/lingr-irc/blob/master/lingr.rb
 
-import urllib
 import httplib
+import socket
+import urllib
 import time
-import json
 import logging
+import json
 
 class Member(object):
     def __init__(self, res):
@@ -59,13 +60,14 @@ class Message(object):
         self.public_session_id = res["public_session_id"]
         self.text = res["text"]
 
+        # TODO: use GMT?
         t = time.strptime(res["timestamp"], Message.TIMESTAMP_FORMAT)
         self.timestamp = time.localtime(time.mktime(t) - time.timezone)
 
         self.mine = False
 
     def decide_mine(self, my_public_session_id):
-        mine = self.public_session_id == my_public_session_id
+        self.mine = self.public_session_id == my_public_session_id
 
     def __repr__(self):
         return "<{0}.{1} {2.speaker_id}: {3}>".format(\
@@ -106,9 +108,6 @@ class Connection(object):
         self.session = None
         self.room_ids = []
 
-    def __del__(self):
-        pass
-
     def start(self):
         try:
             self.create_session()
@@ -129,7 +128,7 @@ class Connection(object):
             if self.auto_reconnect:
                 pass # TODO: retry
 
-        except (httplib.HTTPException, ValueError) as e:
+        except (socket.error, httplib.HTTPException, ValueError) as e:
         # ValueError can be raised by json.loads
             self._on_error(e)
             if self.auto_reconnect:
@@ -282,7 +281,7 @@ class Connection(object):
         try:
             connection.request("GET", url, headers=Connection.HEADERS)
             res = json.loads(connection.getresponse().read())
-        except httplib.HTTPException as e:
+        except socket.timeout as e:
             if is_observe:
                 res = { "status" : "ok" }
             else:
@@ -303,7 +302,8 @@ class Connection(object):
         try:
             connection.request("POST", url, params, Connection.HEADERS)
             res = json.loads(connection.getresponse().read())
-        except httplib.HTTPException as e:
+        except socket.timeout as e:
+            self._debug("post request timed out: " + url)
             raise e
 
         connection.close()
