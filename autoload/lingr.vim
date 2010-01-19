@@ -159,7 +159,7 @@ function! s:setup_messages_buffer()
     " autocmd
     autocmd WinEnter <buffer> silent $
     autocmd User lingr-vim-received-in-lingr-messages
-                \ if line('$') - getpos('.')[1] < s:REMAIN_HEIGHT_TO_AUTO_SCROLL
+                \ if line('$') - line('.') < s:REMAIN_HEIGHT_TO_AUTO_SCROLL
                 \|    silent $
                 \|endif
 

@@ -267,6 +267,8 @@ class LingrVim(object):
             else LingrVim.LEAVE_MESSAGE
         self.messages_buffer.append(\
             format.format(member.name.encode('utf-8')))
+        if self.focused_buffer:
+            vim.command('doautocmd User lingr-vim-received-in-' + self.focused_buffer)
 
     def _dummy_message(self):
         return lingr.Message({
