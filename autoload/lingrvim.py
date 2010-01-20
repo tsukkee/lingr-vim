@@ -48,8 +48,12 @@ class LingrVim(object):
     MESSAGES_STATUSLINE = "lingr-messages ({0})"
 
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
-        # self.lingr = lingr.Connection(user, password, False, logger=lingr._get_debug_logger())
-        self.lingr = lingr.Connection(user, password, False)
+        if int(vim.eval('exists("g:lingr_vim_debug_log_file")')):
+            vim.command('echomsg "Lingr-Vim starts with debug mode"')
+            self.lingr = lingr.Connection(user, password, False,\
+                logger=lingr._get_debug_logger(vim.eval('g:lingr_vim_debug_log_file')))
+        else:
+            self.lingr = lingr.Connection(user, password, False)
 
         # buffers
         # indices of vim.buffers are different from bufnrs
