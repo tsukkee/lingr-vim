@@ -286,6 +286,7 @@ class Connection(object):
             connection.request("GET", url, headers=Connection.HEADERS)
             res = json.loads(connection.getresponse().read())
         except socket.timeout as e:
+            self._debug("get request timed out: " + url)
             if is_observe:
                 res = { "status" : "ok" }
             else:
@@ -330,11 +331,14 @@ class Connection(object):
             self.logger.error(text)
 
 
-def _get_debug_logger():
+def _get_debug_logger(log_file = ""):
     logger = logging.getLogger("lingr.py")
     logger.setLevel(logging.DEBUG)
 
-    ch = logging.StreamHandler()
+    if log_file:
+        ch = logging.FileHandler(log_file, "a")
+    else:
+        ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
 
     formatter = logging.Formatter("%(asctime)s-%(name)s-%(levelname)s-%(message)s")
