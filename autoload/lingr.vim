@@ -143,6 +143,7 @@ function! s:setup_buffer_base()
     autocmd! * <buffer>
     autocmd BufEnter <buffer> silent call s:on_buffer_enter()
     autocmd BufLeave <buffer> silent call s:on_buffer_leave()
+    autocmd CursorHold <buffer> silent call s:polling()
 endfunction
 
 function! s:setup_messages_buffer()
@@ -156,7 +157,6 @@ function! s:setup_messages_buffer()
     setlocal statusline=lingr-messages
 
     " autocmd
-    autocmd CursorHold <buffer> silent call feedkeys("\<Esc>", 'n')
     autocmd WinEnter <buffer> silent $
     autocmd User lingr-vim-received-in-lingr-messages
                 \ if line('$') - line('.') < s:REMAIN_HEIGHT_TO_AUTO_SCROLL
@@ -204,7 +204,7 @@ function! s:setup_members_buffer()
     setlocal statusline=lingr-members
 
     " autocmd
-    autocmd CursorHold <buffer> silent call feedkeys("\<Esc>", 'n')
+    " nothing to do
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-members-open-member)
@@ -230,7 +230,7 @@ function! s:setup_rooms_buffer()
     setlocal statusline=lingr-rooms
 
     " autocmd
-    autocmd CursorHold <buffer> silent call feedkeys("\<Esc>", 'n')
+    " nothing to do
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-rooms-select-room)
@@ -302,6 +302,10 @@ EOM
     if exists('b:saved_updatetime')
         let &updatetime = b:saved_updatetime
     endif
+endfunction
+
+function! s:polling()
+    silent call feedkeys("g\<Esc>", "n")
 endfunction
 
 function! s:rendering()
