@@ -143,7 +143,6 @@ function! s:setup_buffer_base()
     autocmd! * <buffer>
     autocmd BufEnter <buffer> silent call s:on_buffer_enter()
     autocmd BufLeave <buffer> silent call s:on_buffer_leave()
-    autocmd CursorHold <buffer> silent call feedkeys("\<C-l>", 'n')
 endfunction
 
 function! s:setup_messages_buffer()
@@ -157,6 +156,7 @@ function! s:setup_messages_buffer()
     setlocal statusline=lingr-messages
 
     " autocmd
+    autocmd CursorHold <buffer> silent call feedkeys("\<Esc>", 'n')
     autocmd WinEnter <buffer> silent $
     autocmd User lingr-vim-received-in-lingr-messages
                 \ if line('$') - line('.') < s:REMAIN_HEIGHT_TO_AUTO_SCROLL
@@ -204,7 +204,7 @@ function! s:setup_members_buffer()
     setlocal statusline=lingr-members
 
     " autocmd
-    " nothing to do
+    autocmd CursorHold <buffer> silent call feedkeys("\<Esc>", 'n')
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-members-open-member)
@@ -230,7 +230,7 @@ function! s:setup_rooms_buffer()
     setlocal statusline=lingr-rooms
 
     " autocmd
-    " nothing to do
+    autocmd CursorHold <buffer> silent call feedkeys("\<Esc>", 'n')
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-rooms-select-room)
@@ -261,7 +261,7 @@ function! s:setup_say_buffer()
     setlocal nobuflisted
 
     " autocmd
-    " nothing to do
+    autocmd InsertLeave <buffer> silent call s:rendering()
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-say-say)
