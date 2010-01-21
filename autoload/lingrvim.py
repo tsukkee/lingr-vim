@@ -44,13 +44,12 @@ def echo_error(message):
 
 
 class LingrVim(object):
-    JOIN_MESSAGE = "-- {0} is now online"
-    LEAVE_MESSAGE = "-- {0} is now offline"
+    JOIN_MESSAGE         = "-- {0} is now online"
+    LEAVE_MESSAGE        = "-- {0} is now offline"
     GET_ARCHIVES_MESSAGE = "[Read more from archives...]"
-    MESSAGE_HEADER = "{0}({1}):"
-    ARCHIVES_DELIMITER = "--------------------"
-    MEMBERS_STATUSLINE = "lingr-members ({0}/{1})"
-    MESSAGES_STATUSLINE = "lingr-messages ({0})"
+    MESSAGE_HEADER       = "{0}({1}):"
+    MEMBERS_STATUSLINE   = "lingr-members ({0}/{1})"
+    MESSAGES_STATUSLINE  = "lingr-messages ({0})"
 
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
         if int(vim.eval('exists("g:lingr_vim_debug_log_file")')):
@@ -257,12 +256,12 @@ class LingrVim(object):
     def _show_message(self, message):
         if message.type == "dummy":
             self.last_speaker_id = ""
-            self.messages_buffer.append(LingrVim.ARCHIVES_DELIMITER)
+            self.messages_buffer.append(vim.eval('s:ARCHIVES_DELIMITER'))
         else:
             if self.last_speaker_id != message.speaker_id:
                 name = message.nickname.encode('utf-8')
                 mine = "*" if message.speaker_id == self.lingr.username else " "
-                t = time.asctime(message.timestamp) # TODO: customize time format
+                t = time.strftime(vim.eval('g:lingr_vim_time_format'), message.timestamp)
                 text = LingrVim.MESSAGE_HEADER.format(name + mine, t)
                 self.messages_buffer.append(text)
                 self.last_speaker_id = message.speaker_id
@@ -319,5 +318,5 @@ class LingrVim(object):
 
     def _auto_scroll(self):
         if self.focused_buffer == vim.eval('s:MESSAGES_BUFNAME'):
-            if int(vim.eval("line('$') - line('.') < s:REMAIN_HEIGHT_TO_AUTO_SCROLL")):
+            if int(vim.eval("line('$') - line('.') < g:lingr_vim_remain_height_to_auto_scroll')")):
                 vim.command('silent $')

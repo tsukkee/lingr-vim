@@ -1,19 +1,51 @@
 " Constants {{{
-let s:MESSAGES_BUFNAME = 'lingr-messages'
-let s:MESSAGES_FILETYPE = 'lingr-messages'
-let s:ROOMS_BUFNAME = 'lingr-rooms'
-let s:ROOMS_FILETYPE = 'lingr-rooms'
-let s:MEMBERS_BUFNAME = 'lingr-members'
-let s:MEMBERS_FILETYPE = 'lingr-members'
-let s:SAY_BUFNAME = 'lingr-say'
-let s:SAY_FILETYPE = 'lingr-say'
-let s:SIDEBAR_WIDTH = 25
-let s:ROOMS_BUFFER_HEIGHT = 10
-let s:SAY_BUFFER_HEIGHT = 3
-let s:ARCHIVES_DELIMITER = "^--------------------"
-let s:URL_PATTERN = '^https\?://[^ ]*'
-let s:UPDATE_TIME = 500
-let s:REMAIN_HEIGHT_TO_AUTO_SCROLL = 20
+let s:MESSAGES_BUFNAME   = 'lingr-messages'
+let s:MESSAGES_FILETYPE  = 'lingr-messages'
+let s:ROOMS_BUFNAME      = 'lingr-rooms'
+let s:ROOMS_FILETYPE     = 'lingr-rooms'
+let s:MEMBERS_BUFNAME    = 'lingr-members'
+let s:MEMBERS_FILETYPE   = 'lingr-members'
+let s:SAY_BUFNAME        = 'lingr-say'
+let s:SAY_FILETYPE       = 'lingr-say'
+let s:URL_PATTERN        = '^https\?://[^ ]*'
+let s:ARCHIVES_DELIMITER = '--------------------'
+" }}}
+
+" Settings {{{
+function! s:set_default(variable_name, default)
+    if !exists(a:variable_name)
+        execute printf('let %s = "%s"', a:variable_name, a:default)
+    endif
+endfunction
+
+call s:set_default('g:lingr_vim_sidebar_width', 25)
+call s:set_default('g:lingr_vim_rooms_buffer_height', 10)
+call s:set_default('g:lingr_vim_say_buffer_height', 3)
+call s:set_default('g:lingr_vim_update_time', 500)
+call s:set_default('g:lingr_vim_remain_height_to_auto_scroll', 20)
+call s:set_default('g:lingr_vim_time_format', '%c') " see C language strftime() reference
+
+if !exists('g:lingr_vim_command_to_open_url')
+    " Mac
+    if has('mac') || has('macunix') || system('uname') =~? '^darwin'
+        let g:lingr_vim_command_to_open_url = 'open %s'
+    " Windows
+    elseif has('win32') || ('win64')
+        let g:lingr_vim_command_to_open_url = 'start rundll32 url.dll,FileProtocolHandler %s'
+    " KDE
+    elseif exists('$KDE_FULL_SESSION') && $KDE_FULL_SESSION ==# 'true'
+        let g:lingr_vim_command_to_open_url = 'kfmclient exec %s &'
+    " GNOME
+    elseif exists('$GNOME_DESKTOP_SESSION_ID')
+        let g:lingr_vim_command_to_open_url = 'gnome-open %s &'
+    " Xfce
+    elseif executable(vimshell#getfilename('exo-open'))
+        let g:lingr_vim_command_to_open_url = 'exo-open %s &'
+    else
+        " TODO: other OS support?
+        let g:lingr_vim_command_to_open_url = ""
+    endif
+endif
 " }}}
 
 " Initialize {{{
@@ -112,34 +144,12 @@ endfunction
 " http://github.com/kana/config/blob/master/vim/dot.vim/autoload/wwwsearch.vim
 " http://lingr.com/room/vim/archives/2010/01/15#message-157044
 function! lingr#open_url(url)
-    if !exists('g:lingr_command_to_open_url')
-        " Mac
-        if has('mac') || has('macunix') || system('uname') =~? '^darwin'
-            let g:lingr_command_to_open_url = 'open %s'
-        " Windows
-        elseif has('win32') || ('win64')
-            let g:lingr_command_to_open_url = 'start rundll32 url.dll,FileProtocolHandler %s'
-        " KDE
-        elseif exists('$KDE_FULL_SESSION') && $KDE_FULL_SESSION ==# 'true'
-            let g:lingr_command_to_open_url = 'kfmclient exec %s &'
-        " GNOME
-        elseif exists('$GNOME_DESKTOP_SESSION_ID')
-            let g:lingr_command_to_open_url = 'gnome-open %s &'
-        " Xfce
-        elseif executable(vimshell#getfilename('exo-open'))
-            let g:lingr_command_to_open_url = 'exo-open %s &'
-        else
-            " TODO: other OS support?
-            let g:lingr_command_to_open_url = ""
-        endif
-    endif
-
-    if match(a:url, s:URL_PATTERN) == 0 && g:lingr_command_to_open_url != ""
+    if match(a:url, s:URL_PATTERN) == 0 && g:lingr_vim_command_to_open_url != ""
         echo "open url:" a:url . "..."
         sleep 1m
         redraw
         " Do we need Vim 7.2 or higher to use second argument of shellescape()?
-        execute 'silent !' printf(g:lingr_command_to_open_url, shellescape(a:url, 'shell'))
+        execute 'silent !' printf(g:lingr_vim_command_to_open_url, shellescape(a:url, 'shell'))
         echo "open url:" a:url . "... done!"
     endif
 endfunction
@@ -225,7 +235,7 @@ function! s:setup_members_buffer()
     nmap <buffer> <silent> <2-LeftMouse> <Plug>(lingr-members-open-member)
 
     " window size
-    execute s:SIDEBAR_WIDTH 'wincmd |'
+    execute g:lingr_vim_sidebar_width 'wincmd |'
 
     return bufnr('')
 endfunction
@@ -255,7 +265,7 @@ function! s:setup_rooms_buffer()
     nmap <buffer> <silent> <2-LeftMouse> <Plug>(lingr-rooms-open-room)
 
     " window size
-    execute s:ROOMS_BUFFER_HEIGHT 'wincmd _'
+    execute g:lingr_vim_rooms_buffer_height 'wincmd _'
 
     return bufnr('')
 endfunction
@@ -283,7 +293,7 @@ function! s:setup_say_buffer()
     nmap <buffer> <silent> <Esc> <Plug>(lingr-say-close)
 
     " window size
-    execute s:SAY_BUFFER_HEIGHT 'wincmd _'
+    execute g:lingr_vim_say_buffer_height 'wincmd _'
 
     return bufnr('')
 endfunction
@@ -299,7 +309,7 @@ if lingr_vim and lingr_vim.current_room_id:
 EOM
     " set 'updatetime'
     let b:saved_updatetime = &updatetime
-    let &updatetime = s:UPDATE_TIME
+    let &updatetime = g:lingr_vim_update_time
 endfunction
 
 function! s:on_buffer_leave()
@@ -351,7 +361,7 @@ EOM
 endfunction
 
 function! s:search_delimiter(flags)
-    call search(s:ARCHIVES_DELIMITER, a:flags)
+    call search('^' . s:ARCHIVES_DELIMITER, a:flags)
 endfunction
 
 function! s:select_room_by_offset(offset)

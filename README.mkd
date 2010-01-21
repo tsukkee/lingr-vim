@@ -5,6 +5,7 @@ Now this plugin is *very unstable*. Please use this at your own risk.
 
 ## Requirement
 This plugin is tested with Vim 7.2, but maybe works with Vim 7.0 or 7.1.
+
 This plugin needs +python (Python 2.6 only)
 
 ## Usage
@@ -48,3 +49,23 @@ This plugin needs +python (Python 2.6 only)
 * マウスでも一応操作できます
   * `<Enter>`でできることは左クリックでもできます
   * `o`でできることは左ダブルクリックでもできます
+
+## Options
+<dl>
+    <dt>`g:lingr_vim_sidebar_width`</dt>
+    <dd>Width of the sidebar. <br>Default is `25`.</dd>
+
+    <dt>`g:lingr_vim_rooms_buffer_height`</dt>
+    <dd>Height of lingr-rooms buffer. <br>Default is `10`.</dd>
+
+    <dt>`g:lingr_vim_say_buffer_height`</dt>
+    <dd>Height of lingr-say buffer. <br>Default is `3`.</dd>
+
+    <dt>`g:lingr_vim_remain_height_to_auto_scroll`</dt>
+    <dd>If remain height is less than this value, auto scroll is performed
+    when Lingr-Vim receives some messages. <br>Default is `20`.</dd>
+
+    <dt>`g:lingr_vim_time_format`</dt>
+    <dd>Time format for messages. Please see C language strftime() reference
+    to customize this value. <br>Default is `'%c'`.</dd>
+</dl>
