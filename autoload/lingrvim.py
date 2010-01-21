@@ -271,16 +271,11 @@ class LingrVim(object):
             for text in message.text.split("\n"):
                 self.messages_buffer.append(' ' + text.encode('utf-8'))
 
-            if self.focused_buffer:
-                vim.command('doautocmd User lingr-vim-received-in-' + self.focused_buffer)
-
     def _show_presence_message(self, is_join, member):
         format = LingrVim.JOIN_MESSAGE if is_join\
             else LingrVim.LEAVE_MESSAGE
         self.messages_buffer.append(\
             format.format(member.name.encode('utf-8')))
-        if self.focused_buffer:
-            vim.command('doautocmd User lingr-vim-received-in-' + self.focused_buffer)
 
     def _dummy_message(self):
         return lingr.Message({
@@ -309,13 +304,20 @@ class LingrVim(object):
 
             elif op.type == RenderOperation.MESSAGE:
                 self.show_message(op.params["message"])
+                self._auto_scroll()
 
             elif op.type == RenderOperation.PRESENCE:
                 self.show_presence_message(op.params["is_join"], op.params["member"])
                 self.render_members()
+                self._auto_scroll()
 
             elif op.type == RenderOperation.UNREAD:
                 self.render_rooms()
 
         self.render_queue = []
         self.queue_lock.release()
+
+    def _auto_scroll(self):
+        if self.focused_buffer == vim.eval('s:MESSAGES_BUFNAME'):
+            if int(vim.eval("line('$') - line('.') < s:REMAIN_HEIGHT_TO_AUTO_SCROLL")):
+                vim.command('silent $')

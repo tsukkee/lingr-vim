@@ -115,19 +115,19 @@ function! lingr#open_url(url)
     if !exists('g:lingr_command_to_open_url')
         " Mac
         if has('mac') || has('macunix') || system('uname') =~? '^darwin'
-            let g:lingr_command_to_open_url = 'open "%s"'
+            let g:lingr_command_to_open_url = 'open %s'
         " Windows
         elseif has('win32') || ('win64')
-            let g:lingr_command_to_open_url = 'start rundll32 url.dll,FileProtocolHandler "%s"'
+            let g:lingr_command_to_open_url = 'start rundll32 url.dll,FileProtocolHandler %s'
         " KDE
         elseif exists('$KDE_FULL_SESSION') && $KDE_FULL_SESSION ==# 'true'
-            let g:lingr_command_to_open_url = 'kfmclient exec "%s" &'
+            let g:lingr_command_to_open_url = 'kfmclient exec %s &'
         " GNOME
         elseif exists('$GNOME_DESKTOP_SESSION_ID')
-            let g:lingr_command_to_open_url = 'gnome-open "%s" &'
+            let g:lingr_command_to_open_url = 'gnome-open %s &'
         " Xfce
         elseif executable(vimshell#getfilename('exo-open'))
-            let g:lingr_command_to_open_url = 'exo-open "%s" &'
+            let g:lingr_command_to_open_url = 'exo-open %s &'
         else
             " TODO: other OS support?
             let g:lingr_command_to_open_url = ""
@@ -138,6 +138,7 @@ function! lingr#open_url(url)
         echo "open url:" a:url . "..."
         sleep 1m
         redraw
+        " Do we need Vim 7.2 or higher to use second argument of shellescape()?
         execute 'silent !' printf(g:lingr_command_to_open_url, shellescape(a:url, 'shell'))
         echo "open url:" a:url . "... done!"
     endif
@@ -171,11 +172,7 @@ function! s:setup_messages_buffer()
     setlocal statusline=lingr-messages
 
     " autocmd
-    autocmd WinEnter <buffer> silent $
-    autocmd User lingr-vim-received-in-lingr-messages
-                \ if line('$') - line('.') < s:REMAIN_HEIGHT_TO_AUTO_SCROLL
-                \|    silent $
-                \|endif
+    autocmd WinEnter <buffer> silent! 0 | $
 
     " mapping
     nnoremap <silent> <buffer> <Plug>(lingr-messages-messages-buffer-action)
@@ -341,6 +338,7 @@ function! s:messages_buffer_action()
 endfunction
 
 function! s:get_archives()
+    let oldLines = line('$')
     echo "Getting archives..."
     sleep 1m
     redraw
@@ -348,6 +346,7 @@ function! s:get_archives()
 # coding=utf-8
 lingr_vim.get_archives()
 EOM
+    call setpos('.', [0, line('$') - oldLines + 1, 0, 0])
     echo "Getting archives... done!"
 endfunction
 
