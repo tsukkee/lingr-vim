@@ -2,6 +2,12 @@ if exists('g:loaded_lingr_vim')
     finish
 endif
 
+" check Vim version
+if !exists('v:version') || v:version < 700
+    echoerr 'This plugin needs Vim 7.0 or higher (7.2 is recommended)'
+    finish
+endif
+
 " check +python
 if !has('python')
     echoerr 'This plugin needs +python (Python 2.6)'
@@ -27,15 +33,5 @@ endif
 " define commands
 command! -bang LingrLaunch call lingr#launch(<bang>1)
 
-" append python path
-let s:path = expand('<sfile>:p:h:h') . '/autoload'
-python <<EOM
-# coding=utf-8
-import sys
-import vim
-sys.path.append(vim.eval('s:path'))
-
-lingr_vim = None
-EOM
 
 let g:loaded_lingr_vim = 1

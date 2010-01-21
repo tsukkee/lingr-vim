@@ -15,6 +15,20 @@ let s:URL_PATTERN = '^https\?://[^ ]*'
 let s:REMAIN_HEIGHT_TO_AUTO_SCROLL = 20
 " }}}
 
+" Initialize {{{
+" append python path
+let s:path = expand('<sfile>:p:h')
+
+python <<EOM
+# coding=utf-8
+import sys
+import vim
+sys.path.append(vim.eval('s:path'))
+
+lingr_vim = None
+EOM
+" }}}
+
 " Interface {{{
 function! lingr#launch(use_setting)
     " get username and password

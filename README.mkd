@@ -1,10 +1,11 @@
 # Lingr client for Vim
 Now this plugin is *very unstable*. Please use this at your own risk.
 
-今のところ *超不安定* なので、事故責任でご利用ください
+今のところ *超不安定* なので，自己責任でご利用ください
 
 ## Requirement
-This plugin needs +python (Python 2.6)
+This plugin is tested with Vim 7.2, but maybe works with Vim 7.0 or 7.1.
+This plugin needs +python (Python 2.6 only)
 
 ## Usage
 * Launch with `:LingrLaunch`
