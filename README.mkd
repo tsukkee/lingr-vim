@@ -8,38 +8,42 @@ This plugin needs +python (Python 2.6)
 
 ## Usage
 * Launch with :LingrLaunch
-* Select rooms with <Enter> in lingr-rooms buffer at left above
+  * Set user name to g:lingr_vim_user and password to g:lingr_vim_password to automatic login
+  * Use :LingrLaunch! to force interactive login
+* Select rooms with &lt;Enter&gt; in lingr-rooms buffer at left above
 * lingr-members buffer at left below shows members of selected room
 * lingr-messages buffer at right side shows messages
-  * Press <Enter> on [Read more from archives] at top of the buffer
+  * Press &lt;Enter&gt; on [Read more from archives] at top of the buffer
     to get more archives
-  * Press <Enter> on URLs to open it on browser
+  * Press &lt;Enter&gt; on URLs to open it on browser
   * Press s to show a buffer for say
-    * Press <Enter> in Normal Mode to say with the buffer contents
-    * Press <Esc> in Normal Mode to close the buffer
+    * Press &lt;Enter&gt; in Normal Mode to say with the buffer contents
+    * Press &lt;Esc&gt; in Normal Mode to close the buffer
 * Press o in lingr-rooms and lingr-members to open corresponding page
   in Lingr on browser
 * other commands in lingr-messages
-  * Press <C-n> or <C-p> to go around rooms
+  * Press &lt;C-n&gt; or &lt;C-p&gt; to go around rooms
   * Press { or } to junp to delimiters that are inserted between past logs
 * Mouse operation is also supported
-  * Left click works as same as <Enter>
+  * Left click works as same as &lt;Enter&gt;
   * Left double click works as same as o
 
 ## 簡単な使い方
-* :LingrLaunchで起動する
-* 左上のlingr-roomsでは<Enter>で部屋を選択できる
-* 左下のlingr-membersには選択中の部屋のメンバーが表示される
-* 右のlingr-messagesでメッセージを閲覧できる
-  * 一番上の[Read more from archives]で<Enter>を押すと過去ログを遡れる
-  * URL上で<Enter>を押すとブラウザで開ける
-  * sで発言用のバッファが表示される
-    * ノーマルモードで<Enter>を押すとバッファの内容が発言される
-    * ノーマルモードで<Esc>でバッファを閉じる
-* lingr-roomsとlingr-messagesではoを押すとLingrの該当ページをブラウザで開ける
+* :LingrLaunchで起動します
+  * g:lingr_vim_userにユーザ名，g:lingr_vim_passwordにパスワードを設定すると自動的にログインできます
+  * :LingrLaunch!を使うと強制的にユーザ名とパスワードを聞きます
+* 左上のlingr-roomsでは&lt;Enter&gt;で部屋を選択できます
+* 左下のlingr-membersには選択中の部屋のメンバーが表示されます
+* 右のlingr-messagesでメッセージを閲覧できます
+  * 一番上の[Read more from archives]で&lt;Enter&gt;を押すと過去ログを遡れます
+  * URL上で&lt;Enter&gt;を押すとブラウザで開けます
+  * sで発言用のバッファが表示されます
+    * ノーマルモードで&lt;Enter&gt;を押すとバッファの内容が発言されます
+    * ノーマルモードで&lt;Esc&gt;でバッファを閉じます
+* lingr-roomsとlingr-messagesではoを押すとLingrの該当ページをブラウザで開けます
 * lingr-messagesのその他のコマンド
-  * <C-n>と<C-p>で部屋を巡回できる
-  * {と}で過去ログ取得時に挿入される区切りにジャンプできる
-* マウスでも一応操作できる
-  * <Enter>でできることは左クリックでもできる
-  * oでできることは左ダブルクリックでもできる
+  * &lt;C-n&gt;と&lt;C-p&gt;で部屋を巡回できます
+  * {と}で過去ログ取得時に挿入される区切りにジャンプできます
+* マウスでも一応操作できます
+  * &lt;Enter&gt;でできることは左クリックでもできます
+  * oでできることは左ダブルクリックでもできます
