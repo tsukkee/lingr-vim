@@ -111,30 +111,34 @@ class Connection(object):
         self.is_alive = False
 
     def start(self):
-        try:
-            self.create_session()
-            self.get_rooms()
-            self.show_room(",".join(self.room_ids))
-            self.subscribe(",".join(self.room_ids))
+        while True:
+            try:
+                self.create_session()
+                self.get_rooms()
+                self.show_room(",".join(self.room_ids))
+                self.subscribe(",".join(self.room_ids))
 
-            for h in self.connected_hooks:
-                h(self)
+                for h in self.connected_hooks:
+                    h(self)
 
-            while(self.is_alive):
-                self.observe()
+                while(self.is_alive):
+                    self.observe()
 
-        except APIError as e:
-            if e.code == "invalid_user_credentials":
-                raise e
-            self._on_error(e)
-            if self.auto_reconnect:
-                pass # TODO: retry
+            except APIError as e:
+                if e.code == "invalid_user_credentials":
+                    raise e
+                self._on_error(e)
+                if self.auto_reconnect:
+                    continue # retry
 
-        except (socket.error, httplib.HTTPException, ValueError) as e:
-        # ValueError can be raised by json.loads
-            self._on_error(e)
-            if self.auto_reconnect:
-                pass # TODO: retry
+            except (socket.error, httplib.HTTPException, ValueError) as e:
+            # ValueError can be raised by json.loads
+                self._on_error(e)
+                if self.auto_reconnect:
+                    continue # retry
+
+            else:
+                break # finish
 
     def create_session(self):
         self._debug("requesting session/create: " + self.user)
@@ -155,7 +159,7 @@ class Connection(object):
 
     def destroy_session(self):
         try:
-            self._debug("requesting session/destroy")
+            self._debug("requesting session/destroy: " + self.session)
             res = self._post("session/destroy", {"session": self.session})
             self._debug("session/destroy response: " + str(res))
 
@@ -169,7 +173,7 @@ class Connection(object):
             self.is_alive = False
             return res
         except Exception as e:
-            self._log_error(str(e))
+            self._log_error(repr(e))
 
     def set_presence(self, presence):
         self._debug("requesting session/set_presence: " + presence)
@@ -268,7 +272,7 @@ class Connection(object):
 
 
     def _on_error(self, e):
-        self._log_error("error: " + str(e))
+        self._log_error("error: " + repr(e))
         if self.session:
             self.destroy_session()
         for h in self.error_hooks:

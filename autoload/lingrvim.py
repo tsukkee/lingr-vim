@@ -33,6 +33,11 @@ def make_modifiable(buffer, func):
         vim.command("call setbufvar({0.number}, '&modifiable', 0)".format(buffer))
     return do
 
+def echo(message):
+    vim.command('echo "{0}"'.format(message))
+
+def echo_message(message):
+    vim.command('echomsg "{0}"'.format(message))
 
 def echo_error(message):
     vim.command('echoerr "Lingr-Vim Error: {0}"'.format(message))
@@ -49,11 +54,11 @@ class LingrVim(object):
 
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
         if int(vim.eval('exists("g:lingr_vim_debug_log_file")')):
-            vim.command('echomsg "Lingr-Vim starts with debug mode"')
+            echo_message("Lingr-Vim starts with debug mode")
             self.lingr = lingr.Connection(user, password, False,\
                 logger=lingr._get_debug_logger(vim.eval('g:lingr_vim_debug_log_file')))
         else:
-            self.lingr = lingr.Connection(user, password, False)
+            self.lingr = lingr.Connection(user, password, False) # TODO: use auto_reconnect
 
         # buffers
         # indices of vim.buffers are different from bufnrs
@@ -109,10 +114,13 @@ class LingrVim(object):
                 or self.rooms_buffer.number == current_bufnr:
                 self.focused_buffer = vim.eval("bufname('')")
 
-            vim.command("echo 'Launching Lingr-Vim... done!'")
+            echo('Lingr-Vim has connected to Lingr')
 
         def error_hook(sender, error):
-            echo_error(str(error))
+            echo_error(repr(error))
+            if sender.auto_reconnect:
+                echo_message('Lingr-Vim will try re-connect after {0} seconds later'\
+                    .format(lingr.Connection.RETRY_INTERVAL))
 
         def message_hook(sender, room, message):
             self.messages[room.id].append(message)
