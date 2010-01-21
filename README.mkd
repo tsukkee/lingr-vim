@@ -68,4 +68,9 @@ This plugin needs +python (Python 2.6 only)
     <dt><code>g:lingr_vim_time_format</code></dt>
     <dd>Time format for messages. Please see C language strftime() reference
     to customize this value. <br>Default is <code>'%c'</code>.</dd>
+
+    <dt><code>g:lingr_vim_command_to_open_url</code></dt>
+    <dd>Command to open url in browsers. Default value is set for each OSs.
+    For example, <code>"open %s"</code> is set for Mac OS X.
+    <code>%s</code> is replaced to specified URL</dd>
 </dl>
