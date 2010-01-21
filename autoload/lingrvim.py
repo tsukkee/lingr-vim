@@ -343,6 +343,6 @@ class LingrVim(object):
         self.queue_lock.release()
 
     def _auto_scroll(self):
-        if self.focused_buffer == vim.eval('s:MESSAGES_BUFNAME'):
-            if int(vim.eval("line('$') - line('.') < g:lingr_vim_remain_height_to_auto_scroll')")):
+        if self.focused_buffer == vim.eval('s:MESSAGES_BUFNAME')\
+            and int(vim.eval("line('$') - line('.') < g:lingr_vim_remain_height_to_auto_scroll")):
                 vim.command('silent $')

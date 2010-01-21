@@ -364,7 +364,11 @@ class Connection(object):
 
 
 def _get_debug_logger(log_file = ""):
-    logger = logging.getLogger("lingr.py")
+    if not hasattr(_get_debug_logger, 'count'):
+        _get_debug_logger.count = -1
+    _get_debug_logger.count += 1
+    logger = logging.getLogger("lingr.py-" + str(_get_debug_logger.count))
+
     logger.setLevel(logging.DEBUG)
 
     if log_file:
