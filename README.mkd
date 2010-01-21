@@ -52,20 +52,20 @@ This plugin needs +python (Python 2.6 only)
 
 ## Options
 <dl>
-    <dt>`g:lingr_vim_sidebar_width`</dt>
-    <dd>Width of the sidebar. <br>Default is `25`.</dd>
+    <dt><code>g:lingr_vim_sidebar_width</code></dt>
+    <dd>Width of the sidebar. <br>Default is <code>25</code>.</dd>
 
-    <dt>`g:lingr_vim_rooms_buffer_height`</dt>
-    <dd>Height of lingr-rooms buffer. <br>Default is `10`.</dd>
+    <dt><code>g:lingr_vim_rooms_buffer_height</code></dt>
+    <dd>Height of lingr-rooms buffer. <br>Default is <code>10</code>.</dd>
 
-    <dt>`g:lingr_vim_say_buffer_height`</dt>
-    <dd>Height of lingr-say buffer. <br>Default is `3`.</dd>
+    <dt><code>g:lingr_vim_say_buffer_height</code></dt>
+    <dd>Height of lingr-say buffer. <br>Default is <code>3</code>.</dd>
 
-    <dt>`g:lingr_vim_remain_height_to_auto_scroll`</dt>
+    <dt><code>g:lingr_vim_remain_height_to_auto_scroll</code></dt>
     <dd>If remain height is less than this value, auto scroll is performed
-    when Lingr-Vim receives some messages. <br>Default is `20`.</dd>
+    when Lingr-Vim receives some messages. <br>Default is <code>20</code>.</dd>
 
-    <dt>`g:lingr_vim_time_format`</dt>
+    <dt><code>g:lingr_vim_time_format</code></dt>
     <dd>Time format for messages. Please see C language strftime() reference
-    to customize this value. <br>Default is `'%c'`.</dd>
+    to customize this value. <br>Default is <code>'%c'</code>.</dd>
 </dl>
