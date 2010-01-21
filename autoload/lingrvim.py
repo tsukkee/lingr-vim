@@ -18,6 +18,14 @@ class LingrObserver(threading.Thread):
             echo_error(e.detail)
 
 
+class RenderOperation(object):
+    CONNECTED, MESSAGE, PRESENCE, UNREAD = range(4)
+
+    def __init__(self, type, params = {}):
+        self.type = type
+        self.params = params
+
+
 def make_modifiable(buffer, func):
     def do(*args, **keywords):
         vim.command("call setbufvar({0.number}, '&modifiable', 1)".format(buffer))
@@ -62,6 +70,10 @@ class LingrVim(object):
             make_modifiable(self.members_buffer, self._render_members)
         self.render_rooms = \
             make_modifiable(self.rooms_buffer, self._render_rooms)
+        self.show_message = \
+            make_modifiable(self.messages_buffer, self._show_message)
+        self.show_presence_message = \
+            make_modifiable(self.messages_buffer, self._show_presence_message)
 
         # for display messages
         self.current_room_id = ""
@@ -69,6 +81,10 @@ class LingrVim(object):
         self.messages = {} # {"room1": [message1, message2], "room2": [message1 ...
         self.has_unread = {} # {"room1": True, "room2": False ...
         self.focused_buffer = None
+
+        # for threading
+        self.render_queue = [] # for RenderOperation
+        self.queue_lock = threading.Lock()
 
     def __del__(self):
         self.destroy()
@@ -83,7 +99,9 @@ class LingrVim(object):
                 self.has_unread[id] = False
 
             self.current_room_id = sender.rooms.keys()[0]
-            self.render_all()
+
+            self.push_operation(RenderOperation(RenderOperation.CONNECTED))
+            vim.command('doautocmd CursorHold') # force to redraw contents
 
             current_bufnr = int(vim.eval("bufnr('')"))
             if self.messages_buffer.number == current_bufnr\
@@ -99,35 +117,27 @@ class LingrVim(object):
         def message_hook(sender, room, message):
             self.messages[room.id].append(message)
             if self.current_room_id == room.id:
-                self._show_message(message)
+                self.push_operation(RenderOperation(RenderOperation.MESSAGE,\
+                    {"message": message}))
             if not self.focused_buffer or self.current_room_id != room.id:
                 self.has_unread[room.id] = True
-                self.render_rooms()
+                self.push_operation(RenderOperation(RenderOperation.UNREAD, {}))
 
         def join_hook(sender, room, member):
             if self.current_room_id == room.id:
-                self.messages_buffer.append(\
-                    LingrVim.JOIN_MESSAGE.format(member.name.encode('utf-8')))
-                self.render_members()
-                if self.focused_buffer:
-                    vim.command('doautocmd User lingr-vim-received-in-' + self.focused_buffer)
+                self.push_operation(RenderOperation(RenderOperation.PRESENCE,\
+                    {"is_join": True, "member": member}))
 
         def leave_hook(sender, room, member):
             if self.current_room_id == room.id:
-                self.messages_buffer.append(\
-                    LingrVim.LEAVE_MESSAGE.format(member.name.encode('utf-8')))
-                self.render_members()
-                if self.focused_buffer:
-                    vim.command('doautocmd User lingr-vim-received-in-' + self.focused_buffer)
+                self.push_operation(RenderOperation(RenderOperation.PRESENCE,\
+                    {"is_join": False, "member": member}))
 
         self.lingr.connected_hooks.append(connected_hook)
         self.lingr.error_hooks.append(error_hook)
-        self.lingr.message_hooks.append(\
-            make_modifiable(self.messages_buffer, message_hook))
-        self.lingr.join_hooks.append(\
-            make_modifiable(self.messages_buffer, join_hook))
-        self.lingr.leave_hooks.append(\
-            make_modifiable(self.messages_buffer, leave_hook))
+        self.lingr.message_hooks.append(message_hook)
+        self.lingr.join_hooks.append(join_hook)
+        self.lingr.leave_hooks.append(leave_hook)
 
         LingrObserver(self.lingr).start()
 
@@ -256,6 +266,14 @@ class LingrVim(object):
             if self.focused_buffer:
                 vim.command('doautocmd User lingr-vim-received-in-' + self.focused_buffer)
 
+    def _show_presence_message(self, is_join, member):
+        format = LingrVim.JOIN_MESSAGE if is_join\
+            else LingrVim.LEAVE_MESSAGE
+        self.messages_buffer.append(\
+            format.format(member.name.encode('utf-8')))
+        if self.focused_buffer:
+            vim.command('doautocmd User lingr-vim-received-in-' + self.focused_buffer)
+
     def _dummy_message(self):
         return lingr.Message({
             'id': '-1',
@@ -266,3 +284,30 @@ class LingrVim(object):
             'text': '-',
             'timestamp': time.strftime(lingr.Message.TIMESTAMP_FORMAT, time.gmtime())
             })
+
+    def push_operation(self, operation):
+        self.queue_lock.acquire()
+        self.render_queue.append(operation)
+        self.queue_lock.release()
+
+    def process_queue(self):
+        if len(self.render_queue) == 0:
+            return
+
+        self.queue_lock.acquire()
+        for op in self.render_queue:
+            if op.type == RenderOperation.CONNECTED:
+                self.render_all()
+
+            elif op.type == RenderOperation.MESSAGE:
+                self.show_message(op.params["message"])
+
+            elif op.type == RenderOperation.PRESENCE:
+                self.show_presence_message(op.params["is_join"], op.params["member"])
+                self.render_members()
+
+            elif op.type == RenderOperation.UNREAD:
+                self.render_rooms()
+
+        self.render_queue = []
+        self.queue_lock.release()

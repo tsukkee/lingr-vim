@@ -12,6 +12,7 @@ let s:ROOMS_BUFFER_HEIGHT = 10
 let s:SAY_BUFFER_HEIGHT = 3
 let s:ARCHIVES_DELIMITER = "^--------------------"
 let s:URL_PATTERN = '^https\?://[^ ]*'
+let s:UPDATE_TIME = 500
 let s:REMAIN_HEIGHT_TO_AUTO_SCROLL = 20
 " }}}
 
@@ -68,6 +69,11 @@ lingr_vim = lingrvim.LingrVim(\
 lingr_vim.setup()
 EOM
 
+    augroup plugin-lingr-vim
+        autocmd!
+        autocmd CursorHold * silent call s:rendering()
+    augroup END
+
     command! LingrExit call lingr#exit()
 endfunction
 
@@ -75,6 +81,10 @@ function! lingr#exit()
     echo "Exiting Lingr-Vim..."
     sleep 1m
     redraw
+
+    augroup plugin-lingr-vim
+        autocmd!
+    augroup END
 
     python <<EOM
 # coding=utf-8
@@ -147,6 +157,7 @@ function! s:setup_buffer_base()
     autocmd! * <buffer>
     autocmd BufEnter <buffer> silent call s:on_buffer_enter()
     autocmd BufLeave <buffer> silent call s:on_buffer_leave()
+    autocmd CursorHold <buffer> silent call s:polling()
 endfunction
 
 function! s:setup_messages_buffer()
@@ -264,7 +275,7 @@ function! s:setup_say_buffer()
     setlocal nobuflisted
 
     " autocmd
-    " nothing to do
+    autocmd InsertLeave <buffer> silent call s:rendering()
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-say-say)
@@ -289,6 +300,9 @@ function! s:on_buffer_enter()
 if lingr_vim and lingr_vim.current_room_id:
     lingr_vim.set_focus(vim.eval("bufname('')"))
 EOM
+    " set 'updatetime'
+    let b:saved_updatetime = &updatetime
+    let &updatetime = s:UPDATE_TIME
 endfunction
 
 function! s:on_buffer_leave()
@@ -297,6 +311,21 @@ function! s:on_buffer_leave()
 # after lingr_vim has initialized
 if lingr_vim and lingr_vim.current_room_id:
     lingr_vim.set_focus(None)
+EOM
+    " reset 'updatetime'
+    if exists('b:saved_updatetime')
+        let &updatetime = b:saved_updatetime
+    endif
+endfunction
+
+function! s:polling()
+    silent call feedkeys("g\<Esc>", "n")
+endfunction
+
+function! s:rendering()
+    python <<EOM
+# coding=utf-8
+lingr_vim.process_queue()
 EOM
 endfunction
 " }}}
