@@ -32,6 +32,8 @@ import threading
 import time
 import logging
 
+VIM_ENCODING = vim.eval('&encoding')
+
 class LingrObserver(threading.Thread):
     def __init__(self, lingr):
         super(LingrObserver, self).__init__()
@@ -240,7 +242,7 @@ class LingrVim(object):
         for m in self.messages[self.current_room_id]:
             self._show_message(m)
 
-        room_name = self.lingr.rooms[self.current_room_id].name.encode('utf-8')
+        room_name = self.lingr.rooms[self.current_room_id].name.encode(VIM_ENCODING)
         statusline = LingrVim.MESSAGES_STATUSLINE.format(room_name)
         vim.command("call setbufvar({0.number}, '&statusline', '{1}')".format(\
             self.messages_buffer, statusline))
@@ -251,7 +253,7 @@ class LingrVim(object):
         for id, room in self.lingr.rooms.iteritems():
             mark = " *" if id == self.current_room_id else ""
             has_unread = " (*)" if self.has_unread[id] else ""
-            text = room.name.encode('utf-8') + mark + has_unread
+            text = room.name.encode(VIM_ENCODING) + mark + has_unread
             self.rooms_buffer.append(text)
 
         del self.rooms_buffer[0]
@@ -265,12 +267,12 @@ class LingrVim(object):
 
         for m in onlines:
             owner = '(owner)' if m.owner else ''
-            text = m.name.encode('utf-8') + owner + " +"
+            text = m.name.encode(VIM_ENCODING) + owner + " +"
             self.members_buffer.append(text)
 
         for m in offlines:
             owner = '(owner)' if m.owner else ''
-            text = m.name.encode('utf-8') + owner + " -"
+            text = m.name.encode(VIM_ENCODING) + owner + " -"
             self.members_buffer.append(text)
 
         del self.members_buffer[0]
@@ -285,7 +287,7 @@ class LingrVim(object):
             self.messages_buffer.append(vim.eval('s:ARCHIVES_DELIMITER'))
         else:
             if self.last_speaker_id != message.speaker_id:
-                name = message.nickname.encode('utf-8')
+                name = message.nickname.encode(VIM_ENCODING)
                 mine = "*" if message.speaker_id == self.lingr.username else " "
                 t = time.strftime(vim.eval('g:lingr_vim_time_format'), message.timestamp)
                 text = LingrVim.MESSAGE_HEADER.format(name + mine, t)
@@ -294,13 +296,13 @@ class LingrVim(object):
 
             # vim.buffer.append() cannot receive newlines
             for text in message.text.split("\n"):
-                self.messages_buffer.append(' ' + text.encode('utf-8'))
+                self.messages_buffer.append(' ' + text.encode(VIM_ENCODING))
 
     def _show_presence_message(self, is_join, member):
         format = LingrVim.JOIN_MESSAGE if is_join\
             else LingrVim.LEAVE_MESSAGE
         self.messages_buffer.append(\
-            format.format(member.name.encode('utf-8')))
+            format.format(member.name.encode(VIM_ENCODING)))
 
     def _dummy_message(self):
         return lingr.Message({
