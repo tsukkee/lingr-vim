@@ -149,6 +149,7 @@ function! lingr#exit()
 # coding=utf-8
 if lingr_vim:
     lingr_vim.destroy()
+    lingr_vim = None
 EOM
 
     silent! delcommand LingrExit
@@ -179,6 +180,17 @@ function! lingr#open_url(url)
         execute 'silent !' printf(g:lingr_vim_command_to_open_url, shellescape(a:url, 'shell'))
         echo "open url:" a:url . "... done!"
     endif
+endfunction
+
+function! lingr#has_unread()
+    let s:result = -1
+    python <<EOM
+# coding=utf-8
+import vim
+if lingr_vim:
+    vim.command('let s:result = "{0}"'.format(int(lingr_vim.has_unread())))
+EOM
+    return s:result
 endfunction
 " }}}
 
