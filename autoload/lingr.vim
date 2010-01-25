@@ -66,11 +66,10 @@ if !exists('g:lingr_vim_command_to_open_url')
     elseif exists('$GNOME_DESKTOP_SESSION_ID')
         let g:lingr_vim_command_to_open_url = 'gnome-open %s &'
     " Xfce
-    elseif executable(vimshell#getfilename('exo-open'))
+    elseif executable('exo-open')
         let g:lingr_vim_command_to_open_url = 'exo-open %s &'
     else
-        " TODO: other OS support?
-        let g:lingr_vim_command_to_open_url = ""
+        let g:lingr_vim_command_to_open_url = ''
     endif
 endif
 " }}}
@@ -164,7 +163,15 @@ endfunction
 function! lingr#say(text)
     python <<EOM
 # coding=utf-8
-lingr_vim.say(vim.eval('a:text'))
+import lingrvim
+
+if lingr_vim and lingr_vim.has_initialized():
+    if lingr_vim.say(vim.eval('a:text')):
+        pass
+    else:
+        lingrvim.echo_error("Failed to say: {0}".format(vim.eval('a:text')))
+else:
+    lingrvim.echo_error("Lingr-Vim has not been initialized")
 EOM
 endfunction
 
@@ -179,18 +186,20 @@ function! lingr#open_url(url)
         " Do we need Vim 7.2 or higher to use second argument of shellescape()?
         execute 'silent !' printf(g:lingr_vim_command_to_open_url, shellescape(a:url, 'shell'))
         echo "open url:" a:url . "... done!"
+    else
+        echoerr "Failed to open given url: " . a:url
     endif
 endfunction
 
 function! lingr#has_unread()
-    let s:result = -1
+    let result = -1
     python <<EOM
 # coding=utf-8
 import vim
-if lingr_vim:
-    vim.command('let s:result = "{0}"'.format(int(lingr_vim.has_unread())))
+if lingr_vim and lingr_vim.has_initialized():
+    vim.command('let result = "{0}"'.format(int(lingr_vim.has_unread())))
 EOM
-    return s:result
+    return result
 endfunction
 " }}}
 
@@ -378,8 +387,20 @@ endfunction
 
 " for messages buffer {{{
 function! s:messages_buffer_action()
-    let [bufnum, lnum, col, off] = getpos('.')
-    if lnum == 1
+    let initialized = 0
+    python <<EOM
+# coding=utf-8
+import vim
+vim.command('let initialized = {0}'.format(\
+    int(bool(lingr_vim and lingr_vim.has_initialized()))))
+EOM
+
+    if !initialized
+        echoerr "Lingr-Vim has not been initialized"
+        return
+    endif
+
+    if line('.') == 1
         call s:get_archives()
     elseif match(expand('<cWORD>'), s:URL_PATTERN) == 0
         call lingr#open_url(expand('<cWORD>'))
@@ -395,7 +416,7 @@ function! s:get_archives()
 # coding=utf-8
 lingr_vim.get_archives()
 EOM
-    call setpos('.', [0, line('$') - oldLines + 1, 0, 0])
+    execute line('$') - oldLines + 1
     echo "Getting archives... done!"
 endfunction
 
@@ -407,7 +428,8 @@ function! s:select_room_by_offset(offset)
     python <<EOM
 # coding=utf-8
 import vim
-lingr_vim.select_room_by_offset(int(vim.eval("a:offset")))
+if lingr_vim.has_initialized():
+    lingr_vim.select_room_by_offset(int(vim.eval("a:offset")))
 EOM
 endfunction
 " }}}
@@ -417,9 +439,10 @@ function! s:open_member()
     python <<EOM
 # coding=utf-8
 import vim
-bufnum, lnum, col, off = vim.eval('getpos(".")')
-member_id = lingr_vim.get_member_id_by_lnum(int(lnum))
-vim.command('call lingr#open_url("http://lingr.com/{0}")'.format(member_id))
+if lingr_vim.has_initialized():
+    lnum = vim.eval('line(".")')
+    member_id = lingr_vim.get_member_id_by_lnum(int(lnum))
+    vim.command('call lingr#open_url("http://lingr.com/{0}")'.format(member_id))
 EOM
 endfunction
 " }}}
@@ -428,9 +451,11 @@ endfunction
 function! s:select_room()
     python <<EOM
 # coding=utf-8
-bufnum, lnum, col, off = vim.eval('getpos(".")')
-lingr_vim.select_room_by_lnum(int(lnum))
-vim.eval('setpos(".", [{0}, {1}, {2}, {3}])'.format(bufnum, lnum, col, off))
+import vim
+if lingr_vim.has_initialized():
+    bufnum, lnum, col, off = vim.eval('getpos(".")')
+    lingr_vim.select_room_by_lnum(int(lnum))
+    vim.eval('setpos(".", [{0}, {1}, {2}, {3}])'.format(bufnum, lnum, col, off))
 EOM
 endfunction
 
@@ -438,9 +463,10 @@ function! s:open_room()
     python <<EOM
 # coding=utf-8
 import vim
-bufnum, lnum, col, off = vim.eval('getpos(".")')
-room_id = lingr_vim.get_room_id_by_lnum(int(lnum))
-vim.command('call lingr#open_url("http://lingr.com/room/{0}")'.format(room_id))
+if lingr_vim.has_initialized()
+    lnum = vim.eval('line(".")')
+    room_id = lingr_vim.get_room_id_by_lnum(int(lnum))
+    vim.command('call lingr#open_url("http://lingr.com/room/{0}")'.format(room_id))
 EOM
 endfunction
 " }}}
@@ -448,7 +474,7 @@ endfunction
 " for say buffer {{{
 function! s:show_say_buffer()
     call s:setup_say_buffer()
-    call feedkeys('A', 'n')
+    call feedkeys('GA', 'n')
 endfunction
 
 function! s:close_say_buffer()
@@ -457,7 +483,9 @@ endfunction
 
 function! s:say_buffer_contents()
     let text = join(getline(0, line('$')), "\n")
-    call lingr#say(text)
+    if len(text) > 0
+        call lingr#say(text)
+    endif
     normal! ggdG
     call s:close_say_buffer()
 endfunction

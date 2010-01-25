@@ -116,8 +116,13 @@ class LingrVim(object):
         self.render_queue = [] # for RenderOperation
         self.queue_lock = threading.Lock()
 
+        self._has_initialized = False
+
     def __del__(self):
         self.destroy()
+
+    def has_initialized(self):
+        return self._has_initialized
 
     def setup(self):
         def connected_hook(sender):
@@ -139,6 +144,7 @@ class LingrVim(object):
                 or self.rooms_buffer.number == current_bufnr:
                 self.focused_buffer = vim.eval("bufname('')")
 
+            self._has_initialized = True
             echo('Lingr-Vim has connected to Lingr')
 
         def error_hook(sender, error):
@@ -225,7 +231,9 @@ class LingrVim(object):
 
     def say(self, text):
         if self.current_room_id:
-            self.lingr.say(self.current_room_id, text)
+            return self.lingr.say(self.current_room_id, text)
+        else:
+            return False
 
     def has_unread(self):
         return len([t for t in self._has_unread.values() if t == True]) > 0
