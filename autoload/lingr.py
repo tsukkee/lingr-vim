@@ -251,9 +251,9 @@ class Connection(object):
         return res
 
     def say(self, room_id, text):
-        self._debug("requesting room/say: " + room_id + " " + text.decode('utf-8'))
+        self._debug("requesting room/say: " + room_id + " " + text)
         res = self._post("room/say",\
-            {"session": self.session, "room": room_id, "nickname": self.nickname, "text": text})
+            {"session": self.session, "room": room_id, "nickname": self.nickname, "text": text.encode('utf-8')})
         self._debug("room/say response: " + str(res))
         return res
 

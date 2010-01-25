@@ -463,7 +463,7 @@ function! s:open_room()
     python <<EOM
 # coding=utf-8
 import vim
-if lingr_vim.has_initialized()
+if lingr_vim.has_initialized():
     lnum = vim.eval('line(".")')
     room_id = lingr_vim.get_room_id_by_lnum(int(lnum))
     vim.command('call lingr#open_url("http://lingr.com/room/{0}")'.format(room_id))
