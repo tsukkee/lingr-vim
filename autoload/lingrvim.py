@@ -233,7 +233,7 @@ class LingrVim(object):
 
     def say(self, text):
         if self.current_room_id:
-            return self.lingr.say(self.current_room_id, text)
+            return self.lingr.say(self.current_room_id, text.decode(VIM_ENCODING).encode('utf-8'))
         else:
             return False
 
