@@ -96,15 +96,15 @@ class LingrVim(object):
         self.rooms_buffer = find_buffer(rooms_bufnr)
 
         # generate render functions
-        self.render_messages = \
+        self.render_messages =\
             make_modifiable(self.messages_buffer, self._render_messages)
-        self.render_members = \
+        self.render_members =\
             make_modifiable(self.members_buffer, self._render_members)
-        self.render_rooms = \
+        self.render_rooms =\
             make_modifiable(self.rooms_buffer, self._render_rooms)
-        self.show_message = \
+        self.show_message =\
             make_modifiable(self.messages_buffer, self._show_message)
-        self.show_presence_message = \
+        self.show_presence_message =\
             make_modifiable(self.messages_buffer, self._show_presence_message)
 
         # for display messages
@@ -118,13 +118,11 @@ class LingrVim(object):
         self.render_queue = [] # for RenderOperation
         self.queue_lock = threading.Lock()
 
-        self._has_initialized = False
-
     def __del__(self):
         self.destroy()
 
     def has_initialized(self):
-        return self._has_initialized
+        return self.current_room_id != ""
 
     def setup(self):
         def connected_hook(sender):
@@ -146,7 +144,6 @@ class LingrVim(object):
                 or self.rooms_buffer.number == current_bufnr:
                 self.focused_buffer = vim.eval("bufname('')")
 
-            self._has_initialized = True
             echo('Lingr-Vim has connected to Lingr')
 
         def error_hook(sender, error):

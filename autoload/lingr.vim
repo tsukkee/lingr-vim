@@ -104,9 +104,9 @@ function! lingr#launch(use_setting)
     redraw
 
     wincmd o
-    let s:messages_bufnr = s:setup_messages_buffer()
-    let s:members_bufnr = s:setup_members_buffer()
-    let s:rooms_bufnr = s:setup_rooms_buffer()
+    call s:MessagesBuffer.initialize()
+    call s:MembersBuffer.initialize()
+    call s:RoomsBuffer.initialize()
 
     " import lingrvim
     python <<EOM
@@ -120,16 +120,16 @@ if lingr_vim:
 lingr_vim = lingrvim.LingrVim(\
     vim.eval('user'),\
     vim.eval('password'),\
-    int(vim.eval('s:messages_bufnr')),\
-    int(vim.eval('s:members_bufnr')),\
-    int(vim.eval('s:rooms_bufnr')))
+    int(vim.eval('s:MessagesBuffer.bufnr')),\
+    int(vim.eval('s:MembersBuffer.bufnr')),\
+    int(vim.eval('s:RoomsBuffer.bufnr')))
 
 lingr_vim.setup()
 EOM
 
     augroup plugin-lingr-vim
         autocmd!
-        autocmd CursorHold * silent call s:rendering()
+        autocmd CursorHold * silent call s:BufferBase.rendering()
     augroup END
 
     command! LingrExit call lingr#exit()
@@ -153,9 +153,10 @@ EOM
 
     silent! delcommand LingrExit
 
-    silent! execute 'bwipeout' s:messages_bufnr
-    silent! execute 'bwipeout' s:members_bufnr
-    silent! execute 'bwipeout' s:rooms_bufnr
+    call s:MessagesBuffer.destroy()
+    call s:MembersBuffer.destroy()
+    call s:RoomsBuffer.destroy()
+    call s:SayBuffer.destroy()
 
     echo "Exiting Lingr-Vim... done!"
 endfunction
@@ -203,9 +204,21 @@ EOM
 endfunction
 " }}}
 
-" Private functions {{{
-" setup buffer {{{
-function! s:setup_buffer_base()
+" object BufferBase {{{
+let s:BufferBase = {"bufnr": -1}
+
+function! s:BufferBase.initialize()
+    let self.bufnr = self.layout()
+    call self.setup_base()
+    call self.setup()
+endfunction
+
+function! s:BufferBase.destroy()
+    silent! execute 'bwipeout' self.bufnr
+    let self.bufnr = -1
+endfunction
+
+function! s:BufferBase.setup_base()
     " option
     setlocal buftype=nofile
     setlocal noswapfile
@@ -214,141 +227,19 @@ function! s:setup_buffer_base()
 
     " autocmd
     autocmd! * <buffer>
-    autocmd BufEnter <buffer> silent call s:on_buffer_enter()
-    autocmd BufLeave <buffer> silent call s:on_buffer_leave()
-    autocmd CursorHold <buffer> silent call s:polling()
+    autocmd BufEnter <buffer> silent call s:BufferBase.on_enter()
+    autocmd BufLeave <buffer> silent call s:BufferBase.on_leave()
+    autocmd CursorHold <buffer> silent call s:BufferBase.polling()
 endfunction
 
-function! s:setup_messages_buffer()
-    " split
-    execute 'edit' s:MESSAGES_BUFNAME
-    let &filetype = s:MESSAGES_FILETYPE
-
-    call s:setup_buffer_base()
-
-    " option
-    setlocal statusline=lingr-messages
-
-    " autocmd
-    autocmd WinEnter <buffer> silent! 0 | $
-
-    " mapping
-    nnoremap <silent> <buffer> <Plug>(lingr-messages-messages-buffer-action)
-                \ :<C-u>call <SID>messages_buffer_action()<CR>
-    nnoremap <silent> <buffer> <Plug>(lingr-messages-search-delimiter-forward)
-                \ :<C-u>call <SID>search_delimiter('')<CR>
-    nnoremap <silent> <buffer> <Plug>(lingr-messages-search-delimiter-backward)
-                \ :<C-u>call <SID>search_delimiter('b')<CR>
-    nnoremap <silent> <buffer> <Plug>(lingr-messages-select-next-room)
-                \ :<C-u>call <SID>select_room_by_offset(v:count1)<CR>
-                \ :doautocmd WinEnter<CR>
-    nnoremap <silent> <buffer> <Plug>(lingr-messages-select-prev-room)
-                \ :<C-u>call <SID>select_room_by_offset(- v:count1)<CR>
-                \ :doautocmd WinEnter<CR>
-    nnoremap <silent> <buffer> <Plug>(lingr-messages-show-say-buffer)
-                \ :<C-u>call <SID>show_say_buffer()<CR>
-
-    nmap <silent> <buffer> <CR> <Plug>(lingr-messages-messages-buffer-action)
-    nmap <silent> <buffer> <LeftRelease> <Plug>(lingr-messages-messages-buffer-action)
-    nmap <silent> <buffer> } <Plug>(lingr-messages-search-delimiter-forward)
-    nmap <silent> <buffer> { <Plug>(lingr-messages-search-delimiter-backward)
-    nmap <silent> <buffer> <C-n> <Plug>(lingr-messages-select-next-room)
-    nmap <silent> <buffer> <C-p> <Plug>(lingr-messages-select-prev-room)
-    nmap <silent> <buffer> s <Plug>(lingr-messages-show-say-buffer)
-
-    " window size
-    " nothing to do
-
+function! s:BufferBase.layout()
     return bufnr('')
 endfunction
 
-function! s:setup_members_buffer()
-    " split
-    execute 'topleft vsplit' s:MEMBERS_BUFNAME
-    let &filetype = s:MEMBERS_FILETYPE
-
-    call s:setup_buffer_base()
-
-    " option
-    setlocal statusline=lingr-members
-
-    " autocmd
-    " nothing to do
-
-    " mapping
-    nnoremap <buffer> <silent> <Plug>(lingr-members-open-member)
-                \ :<C-u>call <SID>open_member()<CR>
-
-    nmap <buffer> <silent> o <Plug>(lingr-members-open-member)
-    nmap <buffer> <silent> <2-LeftMouse> <Plug>(lingr-members-open-member)
-
-    " window size
-    execute g:lingr_vim_sidebar_width 'wincmd |'
-
-    return bufnr('')
+function! s:BufferBase.setup()
 endfunction
 
-function! s:setup_rooms_buffer()
-    " split
-    execute 'leftabove split' s:ROOMS_BUFNAME
-    let &filetype = s:ROOMS_FILETYPE
-
-    call s:setup_buffer_base()
-
-    " option
-    setlocal statusline=lingr-rooms
-
-    " autocmd
-    " nothing to do
-
-    " mapping
-    nnoremap <buffer> <silent> <Plug>(lingr-rooms-select-room)
-                \ :<C-u>call <SID>select_room()<CR>
-    nnoremap <buffer> <silent> <Plug>(lingr-rooms-open-room)
-                \ :<C-u>call <SID>open_room()<CR>
-
-    nmap <buffer> <silent> <CR> <Plug>(lingr-rooms-select-room)
-    nmap <buffer> <silent> <LeftRelease> <Plug>(lingr-rooms-select-room)
-    nmap <buffer> <silent> o <Plug>(lingr-rooms-open-room)
-    nmap <buffer> <silent> <2-LeftMouse> <Plug>(lingr-rooms-open-room)
-
-    " window size
-    execute g:lingr_vim_rooms_buffer_height 'wincmd _'
-
-    return bufnr('')
-endfunction
-
-function! s:setup_say_buffer()
-    " split
-    execute 'rightbelow split' s:SAY_BUFNAME
-    let &filetype = s:SAY_FILETYPE
-
-    call s:setup_buffer_base()
-
-    " option
-    setlocal statusline=lingr-say
-    setlocal nobuflisted
-
-    " autocmd
-    autocmd InsertLeave <buffer> silent call s:rendering()
-
-    " mapping
-    nnoremap <buffer> <silent> <Plug>(lingr-say-say)
-                \ :<C-u>call <SID>say_buffer_contents()<CR>
-    nnoremap <buffer> <silent> <Plug>(lingr-say-close)
-                \ :<C-u>call <SID>close_say_buffer()<CR>
-    nmap <buffer> <silent> <CR> <Plug>(lingr-say-say)
-    nmap <buffer> <silent> <Esc> <Plug>(lingr-say-close)
-
-    " window size
-    execute g:lingr_vim_say_buffer_height 'wincmd _'
-
-    return bufnr('')
-endfunction
-" }}}
-
-" for all buffer {{{
-function! s:on_buffer_enter()
+function! s:BufferBase.on_enter()
     python <<EOM
 # coding=utf-8
 # after lingr_vim has initialized
@@ -360,7 +251,7 @@ EOM
     let &updatetime = g:lingr_vim_update_time
 endfunction
 
-function! s:on_buffer_leave()
+function! s:BufferBase.on_leave()
     python <<EOM
 # coding=utf-8
 # after lingr_vim has initialized
@@ -373,11 +264,11 @@ EOM
     endif
 endfunction
 
-function! s:polling()
+function! s:BufferBase.polling()
     silent call feedkeys("g\<Esc>", "n")
 endfunction
 
-function! s:rendering()
+function! s:BufferBase.rendering()
     python <<EOM
 # coding=utf-8
 lingr_vim.process_queue()
@@ -385,8 +276,52 @@ EOM
 endfunction
 " }}}
 
-" for messages buffer {{{
-function! s:messages_buffer_action()
+" object MessagesBuffer {{{
+let s:MessagesBuffer = copy(s:BufferBase)
+
+function! s:MessagesBuffer.layout()
+    execute 'edit' s:MESSAGES_BUFNAME
+
+    return bufnr('')
+endfunction
+
+function! s:MessagesBuffer.setup()
+    " option
+    let &filetype = s:MESSAGES_FILETYPE
+    setlocal statusline=lingr-messages
+
+    " autocmd
+    autocmd WinEnter <buffer> call s:MessagesBuffer.scroll_to_end()
+
+    " mapping
+    nnoremap <silent> <buffer> <Plug>(lingr-messages-messages-buffer-action)
+                \ :<C-u>call <SID>MessagesBuffer_action()<CR>
+    nnoremap <silent> <buffer> <Plug>(lingr-messages-search-delimiter-forward)
+                \ :<C-u>call <SID>MessagesBuffer_search_delimiter('')<CR>
+    nnoremap <silent> <buffer> <Plug>(lingr-messages-search-delimiter-backward)
+                \ :<C-u>call <SID>MessagesBuffer_search_delimiter('b')<CR>
+    nnoremap <silent> <buffer> <Plug>(lingr-messages-select-next-room)
+                \ :<C-u>call <SID>MessagesBuffer_select_room(v:count1)<CR>
+    nnoremap <silent> <buffer> <Plug>(lingr-messages-select-prev-room)
+                \ :<C-u>call <SID>MessagesBuffer_select_room(- v:count1)<CR>
+    nnoremap <silent> <buffer> <Plug>(lingr-messages-show-say-buffer)
+                \ :<C-u>call <SID>MessagesBuffer_show_say_buffer()<CR>
+
+    nmap <silent> <buffer> <CR> <Plug>(lingr-messages-messages-buffer-action)
+    nmap <silent> <buffer> <LeftRelease> <Plug>(lingr-messages-messages-buffer-action)
+    nmap <silent> <buffer> } <Plug>(lingr-messages-search-delimiter-forward)
+    nmap <silent> <buffer> { <Plug>(lingr-messages-search-delimiter-backward)
+    nmap <silent> <buffer> <C-n> <Plug>(lingr-messages-select-next-room)
+    nmap <silent> <buffer> <C-p> <Plug>(lingr-messages-select-prev-room)
+    nmap <silent> <buffer> s <Plug>(lingr-messages-show-say-buffer)
+endfunction
+
+function! s:MessagesBuffer.scroll_to_end()
+    silent! 0
+    silent! $
+endfunction
+
+function! s:MessagesBuffer_action()
     let initialized = 0
     python <<EOM
 # coding=utf-8
@@ -401,13 +336,13 @@ EOM
     endif
 
     if line('.') == 1
-        call s:get_archives()
+        call s:MessagesBuffer_get_archives()
     elseif match(expand('<cWORD>'), s:URL_PATTERN) == 0
         call lingr#open_url(expand('<cWORD>'))
     endif
 endfunction
 
-function! s:get_archives()
+function! s:MessagesBuffer_get_archives()
     let oldLines = line('$')
     echo "Getting archives..."
     sleep 1m
@@ -420,22 +355,53 @@ EOM
     echo "Getting archives... done!"
 endfunction
 
-function! s:search_delimiter(flags)
+function! s:MessagesBuffer_search_delimiter(flags)
     call search('^' . s:ARCHIVES_DELIMITER, a:flags)
 endfunction
 
-function! s:select_room_by_offset(offset)
+function! s:MessagesBuffer_select_room(offset)
     python <<EOM
 # coding=utf-8
 import vim
 if lingr_vim.has_initialized():
     lingr_vim.select_room_by_offset(int(vim.eval("a:offset")))
 EOM
+    call s:MessagesBuffer.scroll_to_end()
+endfunction
+
+function! s:MessagesBuffer_show_say_buffer()
+    call s:SayBuffer.initialize()
+    call feedkeys('GA', 'n')
 endfunction
 " }}}
 
-" for members buffer {{{
-function! s:open_member()
+" object MembersBuffer {{{
+let s:MembersBuffer = copy(s:BufferBase)
+
+function! s:MembersBuffer.layout()
+    execute 'topleft vsplit' s:MEMBERS_BUFNAME
+    execute g:lingr_vim_sidebar_width 'wincmd |'
+
+    return bufnr('')
+endfunction
+
+function! s:MembersBuffer.setup()
+    " option
+    let &filetype = s:MEMBERS_FILETYPE
+    setlocal statusline=lingr-members
+
+    " autocmd
+    " nothing to do
+
+    " mapping
+    nnoremap <buffer> <silent> <Plug>(lingr-members-open-member)
+                \ :<C-u>call <SID>MembersBuffer_open()<CR>
+
+    nmap <buffer> <silent> o <Plug>(lingr-members-open-member)
+    nmap <buffer> <silent> <2-LeftMouse> <Plug>(lingr-members-open-member)
+endfunction
+
+function! s:MembersBuffer_open()
     python <<EOM
 # coding=utf-8
 import vim
@@ -445,10 +411,40 @@ if lingr_vim.has_initialized():
     vim.command('call lingr#open_url("http://lingr.com/{0}")'.format(member_id))
 EOM
 endfunction
+
 " }}}
 
-" for rooms buffer {{{
-function! s:select_room()
+" object RoomsBuffer {{{
+let s:RoomsBuffer = copy(s:BufferBase)
+
+function! s:RoomsBuffer.layout()
+    execute 'leftabove split' s:ROOMS_BUFNAME
+    execute g:lingr_vim_rooms_buffer_height 'wincmd _'
+
+    return bufnr('')
+endfunction
+
+function! s:RoomsBuffer.setup()
+    " option
+    let &filetype = s:ROOMS_FILETYPE
+    setlocal statusline=lingr-rooms
+
+    " autocmd
+    " nothing to do
+
+    " mapping
+    nnoremap <buffer> <silent> <Plug>(lingr-rooms-select-room)
+                \ :<C-u>call <SID>RoomsBuffer_select()<CR>
+    nnoremap <buffer> <silent> <Plug>(lingr-rooms-open-room)
+                \ :<C-u>call <SID>RoomsBuffer_open()<CR>
+
+    nmap <buffer> <silent> <CR> <Plug>(lingr-rooms-select-room)
+    nmap <buffer> <silent> <LeftRelease> <Plug>(lingr-rooms-select-room)
+    nmap <buffer> <silent> o <Plug>(lingr-rooms-open-room)
+    nmap <buffer> <silent> <2-LeftMouse> <Plug>(lingr-rooms-open-room)
+endfunction
+
+function! s:RoomsBuffer_select()
     python <<EOM
 # coding=utf-8
 import vim
@@ -459,7 +455,7 @@ if lingr_vim.has_initialized():
 EOM
 endfunction
 
-function! s:open_room()
+function! s:RoomsBuffer_open()
     python <<EOM
 # coding=utf-8
 import vim
@@ -471,23 +467,45 @@ EOM
 endfunction
 " }}}
 
-" for say buffer {{{
-function! s:show_say_buffer()
-    call s:setup_say_buffer()
-    call feedkeys('GA', 'n')
+" object SayBuffer {{{
+let s:SayBuffer = copy(s:BufferBase)
+
+function! s:SayBuffer.layout()
+    execute 'rightbelow split' s:SAY_BUFNAME
+    execute g:lingr_vim_say_buffer_height 'wincmd _'
+
+    return bufnr('')
 endfunction
 
-function! s:close_say_buffer()
+function! s:SayBuffer.setup()
+    " option
+    let &filetype = s:SAY_FILETYPE
+    setlocal statusline=lingr-say
+    setlocal nobuflisted
+
+    " autocmd
+    autocmd InsertLeave <buffer> silent call s:SayBuffer.rendering()
+
+    " mapping
+    nnoremap <buffer> <silent> <Plug>(lingr-say-say)
+                \ :<C-u>call <SID>SayBuffer_say()<CR>
+    nnoremap <buffer> <silent> <Plug>(lingr-say-close)
+                \ :<C-u>call <SID>SayBuffer_close()<CR>
+    nmap <buffer> <silent> <CR> <Plug>(lingr-say-say)
+    nmap <buffer> <silent> <Esc> <Plug>(lingr-say-close)
+endfunction
+
+function! s:SayBuffer_close()
     close
 endfunction
 
-function! s:say_buffer_contents()
+function! s:SayBuffer_say()
     let text = join(getline(0, line('$')), "\n")
     if len(text) > 0
         call lingr#say(text)
     endif
     normal! ggdG
-    call s:close_say_buffer()
+    call s:SayBuffer_close()
 endfunction
 " }}}
 
