@@ -29,6 +29,7 @@ This plugin needs +python (Python 2.6 only)
 * Mouse operation is also supported
   * Left click works as same as `<Enter>`
   * Left double click works as same as o
+* Logout with `:LingrExit`
 
 ## 簡単な使い方
 * `:LingrLaunch`で起動します
@@ -49,6 +50,7 @@ This plugin needs +python (Python 2.6 only)
 * マウスでも一応操作できます
   * `<Enter>`でできることは左クリックでもできます
   * `o`でできることは左ダブルクリックでもできます
+* `:LingrExit`でログアウトできます
 
 ## Options
 <dl>
@@ -73,6 +75,24 @@ This plugin needs +python (Python 2.6 only)
     <dd>Command to open url in browsers. Default value is set for each OSs.
     For example, <code>"open %s"</code> is set for Mac OS X.
     <code>%s</code> is replaced to specified URL</dd>
+</dl>
+
+## API
+<dl>
+    <dt><code>lingr#launch(use_setting)</code></dt>
+    <dd>Same as :LingrLaunch</dd>
+
+    <dt><code>lingr#exit()</dt>
+    <dd>Same as :LingrExit</dd>
+
+    <dt><code>lingr#say(text)</dt>
+    <dd>Say <code>a:text</code> to the current room</dd>
+
+    <dt><code>lingr#open_url(url)</dt>
+    <dd>Open <code>a:url</code> in browser with using <code>g:lingr_vim_command_to_open_url</code></dd>
+
+    <dt><code>lingr#unread_count()</code></dt>
+    <dd>Return count of unread messages or -1 if Lingr-Vim has not been launched. You may want to use this in <code>'statusline'</code> or <code>'tabline'</code></dd>
 </dl>
 
 ## Licence
