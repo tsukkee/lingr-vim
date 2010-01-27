@@ -192,13 +192,13 @@ function! lingr#open_url(url)
     endif
 endfunction
 
-function! lingr#has_unread()
+function! lingr#unread_count()
     let result = -1
     python <<EOM
 # coding=utf-8
 import vim
 if lingr_vim and lingr_vim.has_initialized():
-    vim.command('let result = "{0}"'.format(int(lingr_vim.has_unread())))
+    vim.command('let result = "{0}"'.format(int(lingr_vim.unread_count())))
 EOM
     return result
 endfunction
@@ -317,8 +317,9 @@ function! s:MessagesBuffer.setup()
 endfunction
 
 function! s:MessagesBuffer.scroll_to_end()
-    silent! 0
-    silent! $
+    0
+    redraw
+    $
 endfunction
 
 function! s:MessagesBuffer_action()

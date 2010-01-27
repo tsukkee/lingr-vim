@@ -111,7 +111,7 @@ class LingrVim(object):
         self.current_room_id = ""
         self.last_speaker_id = ""
         self.messages = {} # {"room1": [message1, message2], "room2": [message1 ...
-        self._has_unread = {} # {"room1": True, "room2": False ...
+        self.unread_counts = {} # {"room1": 2, "room2": 0 ...
         self.focused_buffer = None
 
         # for threading
@@ -131,12 +131,12 @@ class LingrVim(object):
                 self.messages[id] = []
                 for m in room.backlog:
                     self.messages[id].append(m)
-                self._has_unread[id] = False
+                self.unread_counts[id] = 0
 
             self.current_room_id = sender.rooms.keys()[0]
 
             self.push_operation(RenderOperation(RenderOperation.CONNECTED))
-            vim.command('doautocmd CursorHold') # force to redraw contents
+            vim.command('doautocmd CursorHold') # redraw contents
 
             current_bufnr = int(vim.eval("bufnr('')"))
             if self.messages_buffer.number == current_bufnr\
@@ -158,7 +158,7 @@ class LingrVim(object):
                 self.push_operation(RenderOperation(RenderOperation.MESSAGE,\
                     {"message": message}))
             if not self.focused_buffer or self.current_room_id != room.id:
-                self._has_unread[room.id] = True
+                self.unread_counts[room.id] += 1
                 self.push_operation(RenderOperation(RenderOperation.UNREAD, {}))
 
         def join_hook(sender, room, member):
@@ -186,7 +186,7 @@ class LingrVim(object):
     def set_focus(self, focused):
         if focused:
             self.focused_buffer = focused
-            self._has_unread[self.current_room_id] = False
+            self.unread_counts[self.current_room_id] = 0
             self.render_rooms()
         else:
             self.focused_buffer = None
@@ -206,7 +206,7 @@ class LingrVim(object):
         rooms = self.lingr.rooms.keys()
         if room_id in rooms and self.current_room_id != room_id:
             self.current_room_id = room_id
-            self._has_unread[room_id] = False
+            self.unread_counts[room_id] = 0
             self.render_all()
 
     def get_member_id_by_lnum(self, lnum):
@@ -234,8 +234,10 @@ class LingrVim(object):
         else:
             return False
 
-    def has_unread(self):
-        return len([t for t in self._has_unread.values() if t == True]) > 0
+    def unread_count(self):
+        def sum(a, b):
+            return a + b
+        return reduce(sum, self.unread_counts.values())
 
     def render_all(self):
         self.render_messages()
@@ -260,8 +262,9 @@ class LingrVim(object):
 
         for id, room in self.lingr.rooms.iteritems():
             mark = " *" if id == self.current_room_id else ""
-            has_unread = " (*)" if self._has_unread[id] else ""
-            text = room.name.encode(VIM_ENCODING) + mark + has_unread
+            unread = " (" + str(self.unread_counts[id]) + ")"\
+                if self.unread_counts[id] > 0 else ""
+            text = room.name.encode(VIM_ENCODING) + mark + unread
             self.rooms_buffer.append(text)
 
         del self.rooms_buffer[0]

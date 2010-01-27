@@ -31,7 +31,7 @@ endif
 
 syntax match lingrRoomsActive /.*\ze \*$/
 syntax match lingrRoomsMarker /\*$/
-syntax match lingrRoomsUnread /(\*)$/
+syntax match lingrRoomsUnread /(\d\+)$/
 
 highlight default link lingrRoomsActive Title
 highlight default link lingrRoomsMarker Ignore

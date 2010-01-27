@@ -156,12 +156,16 @@ class Connection(object):
                 self._on_error(e)
                 if self.auto_reconnect:
                     continue # retry
+                else:
+                    break # finish
 
             except (socket.error, httplib.HTTPException, ValueError) as e:
             # ValueError can be raised by json.loads
                 self._on_error(e)
                 if self.auto_reconnect:
                     continue # retry
+                else:
+                    break # finish
 
             else:
                 break # finish
