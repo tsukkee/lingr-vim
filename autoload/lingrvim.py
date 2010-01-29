@@ -29,6 +29,7 @@
 import vim
 import lingr
 import threading
+import socket
 import time
 import logging
 
@@ -147,7 +148,7 @@ class LingrVim(object):
             echo('Lingr-Vim has connected to Lingr')
 
         def error_hook(sender, error):
-            echo_error(repr(error))
+            echo_error("type:" + str(type(error)) + ", detail:" + repr(error))
             if sender.auto_reconnect:
                 echo_message('Lingr-Vim will try re-connect after {0} seconds later'\
                     .format(lingr.Connection.RETRY_INTERVAL))
@@ -230,7 +231,11 @@ class LingrVim(object):
 
     def say(self, text):
         if self.current_room_id:
-            return self.lingr.say(self.current_room_id, text.decode(VIM_ENCODING))
+            try:
+                return self.lingr.say(self.current_room_id, text.decode(VIM_ENCODING))
+            except socket.timeout as e:
+                echo_error('The request was timed out: Say "{0}".\nPlease retry later.'.format(text))
+                return False
         else:
             return False
 

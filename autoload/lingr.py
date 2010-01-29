@@ -327,6 +327,12 @@ class Connection(object):
                 res = { "status" : "ok" }
             else:
                 raise e
+        except httplib.BadStatusLine as e:
+            self._debug("BadStatusLine exception: " + url)
+            if is_observe:
+                res = { "status" : "ok" }
+            else:
+                raise e
 
         connection.close()
 
