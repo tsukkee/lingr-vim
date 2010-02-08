@@ -8,6 +8,22 @@ This plugin is tested with Vim 7.2, but maybe works with Vim 7.0 or 7.1.
 
 This plugin needs +python (Python 2.6 only)
 
+## Install
+Of couse, your machine needs to be connected to web.
+### Examples way of installing Vim with +python feature
+* Windows
+  * Use [KaoriYa Vim](http://www.kaoriya.net/) and [Python 2.6 DLL](http://www.python.org/download/)
+* Mac OS X
+  * Use [MacVim-KaoriYa](http://code.google.com/p/macvim-kaoriya/)
+  * Install with [MacPorts](http://www.macports.org/)
+    * sudo port install vim +huge +python26
+* Other OS
+  * Please let me know!
+
+### Install Lingr-Vim
+* Put files in your vim runtime directory.
+  * If you use Windows, that may be ~\_vimfiles, otherwise that may be ~/.vim
+
 ## Usage
 * Launch with `:LingrLaunch`
   * Set user name to `g:lingr_vim_user` and password to `g:lingr_vim_password` to automatic login
