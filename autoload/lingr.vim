@@ -166,7 +166,7 @@ function! lingr#say(text)
 # coding=utf-8
 import lingrvim
 
-if lingr_vim and lingr_vim.has_initialized():
+if lingr_vim and lingr_vim.is_alive():
     if lingr_vim.say(vim.eval('a:text')):
         pass
     else:
@@ -197,7 +197,7 @@ function! lingr#unread_count()
     python <<EOM
 # coding=utf-8
 import vim
-if lingr_vim and lingr_vim.has_initialized():
+if lingr_vim and lingr_vim.is_alive():
     vim.command('let result = "{0}"'.format(int(lingr_vim.unread_count())))
 EOM
     return result
@@ -223,6 +223,7 @@ function! s:BufferBase.setup_base()
     setlocal buftype=nofile
     setlocal noswapfile
     setlocal bufhidden=hide
+    setlocal foldmethod=manual
     setlocal foldcolumn=0
 
     " autocmd
@@ -328,7 +329,7 @@ function! s:MessagesBuffer_action()
 # coding=utf-8
 import vim
 vim.command('let initialized = {0}'.format(\
-    int(bool(lingr_vim and lingr_vim.has_initialized()))))
+    int(bool(lingr_vim and lingr_vim.is_alive()))))
 EOM
 
     if !initialized
@@ -350,7 +351,11 @@ function! s:MessagesBuffer_get_archives()
     redraw
     python <<EOM
 # coding=utf-8
-lingr_vim.get_archives()
+import socket, httplib
+try:
+    lingr_vim.get_archives()
+except (socket.error, httplib.HTTPException) as e:
+    lingrvim.echo_error("Failed to get archives due to network error")
 EOM
     execute line('$') - oldLines + 1
     echo "Getting archives... done!"
@@ -364,7 +369,7 @@ function! s:MessagesBuffer_select_room(offset)
     python <<EOM
 # coding=utf-8
 import vim
-if lingr_vim.has_initialized():
+if lingr_vim.is_alive():
     lingr_vim.select_room_by_offset(int(vim.eval("a:offset")))
 EOM
     call s:MessagesBuffer.scroll_to_end()
@@ -406,7 +411,7 @@ function! s:MembersBuffer_open()
     python <<EOM
 # coding=utf-8
 import vim
-if lingr_vim.has_initialized():
+if lingr_vim.is_alive():
     lnum = vim.eval('line(".")')
     member_id = lingr_vim.get_member_id_by_lnum(int(lnum))
     vim.command('call lingr#open_url("http://lingr.com/{0}")'.format(member_id))
@@ -449,7 +454,7 @@ function! s:RoomsBuffer_select()
     python <<EOM
 # coding=utf-8
 import vim
-if lingr_vim.has_initialized():
+if lingr_vim.is_alive():
     bufnum, lnum, col, off = vim.eval('getpos(".")')
     lingr_vim.select_room_by_lnum(int(lnum))
     vim.eval('setpos(".", [{0}, {1}, {2}, {3}])'.format(bufnum, lnum, col, off))
@@ -460,7 +465,7 @@ function! s:RoomsBuffer_open()
     python <<EOM
 # coding=utf-8
 import vim
-if lingr_vim.has_initialized():
+if lingr_vim.is_alive():
     lnum = vim.eval('line(".")')
     room_id = lingr_vim.get_room_id_by_lnum(int(lnum))
     vim.command('call lingr#open_url("http://lingr.com/room/{0}")'.format(room_id))

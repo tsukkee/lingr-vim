@@ -147,6 +147,7 @@ class Connection(object):
                 for h in self.connected_hooks:
                     h(self)
 
+                self.is_alive = True
                 while(self.is_alive):
                     self.observe()
 
@@ -154,7 +155,7 @@ class Connection(object):
                 if e.code == "invalid_user_credentials":
                     raise e
                 self._on_error(e)
-                if self.auto_reconnect:
+                if self.auto_reconnect and self.is_alive:
                     continue # retry
                 else:
                     break # finish
@@ -162,13 +163,17 @@ class Connection(object):
             except (socket.error, httplib.HTTPException, ValueError) as e:
             # ValueError can be raised by json.loads
                 self._on_error(e)
-                if self.auto_reconnect:
+                if self.auto_reconnect and self.is_alive:
                     continue # retry
                 else:
                     break # finish
 
             else:
                 break # finish
+
+    def destroy(self):
+        self.is_alive = False
+        self.destroy_session()
 
     def create_session(self):
         self._debug("requesting session/create: " + self.user)
@@ -184,7 +189,6 @@ class Connection(object):
             self.name = user["name"]
             self.username = user["username"]
         self.rooms = {}
-        self.is_alive = True
         return res
 
     def destroy_session(self):
@@ -192,7 +196,12 @@ class Connection(object):
             self._debug("requesting session/destroy: " + self.session)
             res = self._post("session/destroy", {"session": self.session})
             self._debug("session/destroy response: " + str(res))
+            return res
 
+        except Exception as e:
+            self._log_error(repr(e))
+
+        finally:
             self.session = None
             self.nickname = None
             self.public_id = None
@@ -200,10 +209,6 @@ class Connection(object):
             self.name = None
             self.username = None
             self.rooms = {}
-            self.is_alive = False
-            return res
-        except Exception as e:
-            self._log_error(repr(e))
 
     def set_presence(self, presence):
         self._debug("requesting session/set_presence: " + presence)
@@ -302,12 +307,14 @@ class Connection(object):
 
 
     def _on_error(self, e):
-        self._log_error("error: " + repr(e))
-        if self.session:
-            self.destroy_session()
-        for h in self.error_hooks:
-            h(self, e)
-        if self.auto_reconnect:
+        self._log_error("lingr.Connection.on_error type: "\
+            + str(type(e)) + ", detail: " + repr(e))
+        # if self.session:
+            # self.destroy_session()
+        if self.is_alive:
+            for h in self.error_hooks:
+                h(self, e)
+        if self.auto_reconnect and self.is_alive:
             time.sleep(Connection.RETRY_INTERVAL)
 
     def _get(self, path, params = None):

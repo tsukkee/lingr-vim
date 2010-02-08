@@ -38,6 +38,7 @@ syntax match lingrMessagesMineMarker /\*\ze(/ contained
 syntax match lingrMessagesSpeaker /^.*\ze (/ contained
 syntax match lingrMessagesTimestamp /(.*)/ contained
 syntax match lingrMessagesChangePresence /^-- .*/
+syntax match lingrMessagesError /^!!! .*/
 
 highlight default link lingrMessagesMine Identifier
 highlight default link lingrMessagesMineMarker Ignore
@@ -45,5 +46,6 @@ highlight default link lingrMessagesSpeaker Title
 highlight default link lingrMessagesTimestamp Statement
 highlight default link lingrMessagesGetArchives Constant
 highlight default link lingrMessagesChangePresence Comment
+highlight default link lingrMessagesError ErrorMsg
 
 let b:current_syntax = 'lingr-messages'
