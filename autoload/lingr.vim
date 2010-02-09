@@ -117,11 +117,11 @@ import lingrvim
 if lingr_vim:
     lingr_vim.destroy()
 
-lingr_vim = lingrvim.LingrVim(\
-    vim.eval('user'),\
-    vim.eval('password'),\
-    int(vim.eval('s:MessagesBuffer.bufnr')),\
-    int(vim.eval('s:MembersBuffer.bufnr')),\
+lingr_vim = lingrvim.LingrVim(
+    vim.eval('user'),
+    vim.eval('password'),
+    int(vim.eval('s:MessagesBuffer.bufnr')),
+    int(vim.eval('s:MembersBuffer.bufnr')),
     int(vim.eval('s:RoomsBuffer.bufnr')))
 
 lingr_vim.setup()
@@ -135,8 +135,6 @@ EOM
     command! LingrExit call lingr#exit()
 
     redraw
-    call s:BufferBase.on_enter()
-    call s:BufferBase.polling()
 endfunction
 
 function! lingr#exit()
@@ -234,7 +232,7 @@ function! s:BufferBase.setup_base()
 
     " autocmd
     autocmd! * <buffer>
-    autocmd BufEnter <buffer> silent call s:BufferBase.on_enter()
+    autocmd BufAdd,BufEnter <buffer> silent call s:BufferBase.on_enter()
     autocmd BufLeave <buffer> silent call s:BufferBase.on_leave()
     autocmd CursorHold <buffer> silent call s:BufferBase.polling()
 endfunction
@@ -250,7 +248,7 @@ function! s:BufferBase.on_enter()
     python <<EOM
 # coding=utf-8
 # after lingr_vim has initialized
-if lingr_vim and lingr_vim.current_room_id:
+if lingr_vim and lingr_vim.is_alive():
     lingr_vim.set_focus(vim.eval("bufname('')"))
 EOM
     " set 'updatetime'

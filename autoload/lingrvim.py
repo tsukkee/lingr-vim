@@ -72,7 +72,7 @@ def echo_error(message):
     vim.command('echohl None')
 
 def set_statusline(buffer, statusline):
-    vim.command("call setbufvar({0.number}, '&statusline', '{1}')".format(\
+    vim.command("call setbufvar({0.number}, '&statusline', '{1}')".format(
         buffer, statusline))
 
 class LingrVim(object):
@@ -142,7 +142,7 @@ class LingrVim(object):
 
                 # merge backlog
                 # TODO: interpolate missing messsages using get_archives()
-                unread_count = 0
+                unread_count = self.unread_counts[id] if id in self.unread_counts else 0
                 for m in room.backlog:
                     if len(self.messages[id]) == 0 or self.messages[id][-1].id < m.id:
                         self.messages[id].append(m)
@@ -259,8 +259,8 @@ class LingrVim(object):
             try:
                 return self.lingr.say(self.current_room_id, text.decode(VIM_ENCODING))
             except socket.timeout as e:
-                echo_error('The request was timed out: Say "{0}".'\
-                    .format(text))
+                echo_error(
+                    'The request was timed out: Say "{0}".'.format(text))
                 return False
         else:
             return False
@@ -339,7 +339,7 @@ class LingrVim(object):
     def _show_presence_message(self, is_join, member):
         format = LingrVim.JOIN_MESSAGE if is_join\
             else LingrVim.LEAVE_MESSAGE
-        self.messages_buffer.append(\
+        self.messages_buffer.append(
             format.format(member.name.encode(VIM_ENCODING)))
 
     def _update_messages_statusline(self):
@@ -350,7 +350,7 @@ class LingrVim(object):
         elif self.state == LingrVim.OFFLINE:
             state = "offline"
         elif self.state == LingrVim.RETRYING:
-            state = "retrying..."
+            state = "waiting for reconnect..."
 
         statusline = LingrVim.MESSAGES_STATUSLINE.format(room_name, state)
         set_statusline(self.messages_buffer, statusline)
