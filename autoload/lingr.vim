@@ -49,7 +49,7 @@ call s:set_default('g:lingr_vim_sidebar_width', 25)
 call s:set_default('g:lingr_vim_rooms_buffer_height', 10)
 call s:set_default('g:lingr_vim_say_buffer_height', 3)
 call s:set_default('g:lingr_vim_update_time', 500)
-call s:set_default('g:lingr_vim_remain_height_to_auto_scroll', 20)
+call s:set_default('g:lingr_vim_remain_height_to_auto_scroll', 5)
 call s:set_default('g:lingr_vim_time_format', '%c') " see C language strftime() reference
 
 if !exists('g:lingr_vim_command_to_open_url')

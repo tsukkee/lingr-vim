@@ -1,7 +1,7 @@
 # Lingr-Vim: Lingr client for Vim
-Now this plugin is *unstable*. Please use this at your own risk.
+Now this plugin is *little unstable*. Please use this at your own risk.
 
-今のところ *不安定* なので，自己責任でご利用ください
+今のところ *ちょっと不安定* なので，自己責任でご利用ください
 
 ## Requirement
 This plugin is tested with Vim 7.2, but maybe works with Vim 7.0 or 7.1.
@@ -10,7 +10,7 @@ This plugin needs +python (Python 2.6 only)
 
 ## Install
 Of couse, your machine needs to be connected to web.
-### Examples way of installing Vim with +python feature
+### Example ways of installing Vim with +python feature
 * Windows
   * Use [KaoriYa Vim](http://www.kaoriya.net/) and [Python 2.6 DLL](http://www.python.org/download/)
 * Mac OS X
@@ -22,7 +22,7 @@ Of couse, your machine needs to be connected to web.
 
 ### Install Lingr-Vim
 * Put files in your vim runtime directory.
-  * If you use Windows, that may be ~\_vimfiles, otherwise that may be ~/.vim
+  * If you use Windows, the runtime directory may be ~\\_vimfiles, otherwise that may be ~/.vim
 
 ## Usage
 * Launch with `:LingrLaunch`
@@ -37,14 +37,14 @@ Of couse, your machine needs to be connected to web.
   * Press `s` to show a buffer for say
     * Press `<Enter>` in Normal Mode to say with the buffer contents
     * Press `<Esc>` in Normal Mode to close the buffer
-* Press `o` in lingr-rooms and lingr-members to open corresponding page
+* Press `o` in lingr-rooms and lingr-members to open corresponding pages
   in Lingr on browser
-* other commands in lingr-messages
+* Other commands in lingr-messages
   * Press `<C-n>` or `<C-p>` to go around rooms
   * Press `{` or `}` to junp to delimiters that are inserted between past logs
-* Mouse operation is also supported
+* Mouse operations are also supported
   * Left click works as same as `<Enter>`
-  * Left double click works as same as o
+  * Left double click works as same as `o`
 * Logout with `:LingrExit`
 
 ## 簡単な使い方
@@ -81,7 +81,7 @@ Of couse, your machine needs to be connected to web.
 
     <dt><code>g:lingr_vim_remain_height_to_auto_scroll</code></dt>
     <dd>If remain height is less than this value, auto scroll is performed
-    when Lingr-Vim receives some messages. <br>Default is <code>20</code>.</dd>
+    when Lingr-Vim receives some messages. <br>Default is <code>5</code>.</dd>
 
     <dt><code>g:lingr_vim_time_format</code></dt>
     <dd>Time format for messages. Please see C language strftime() reference
