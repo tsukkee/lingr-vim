@@ -45,7 +45,7 @@ class Member(object):
         self.presence = res["presence"] == "online"
 
     def __repr__(self):
-        return "<{0}.{1} {2.username} {3}>".format(\
+        return "<{0}.{1} {2.username} {3}>".format(
             __name__, self.__class__.__name__, self, self.name.encode('utf-8'))
 
 
@@ -96,7 +96,7 @@ class Message(object):
         self.mine = self.public_session_id == my_public_session_id
 
     def __repr__(self):
-        return "<{0}.{1} {2.speaker_id}: {3}>".format(\
+        return "<{0}.{1} {2.speaker_id}: {3}>".format(
             __name__, self.__class__.__name__, self, self.text.encode('utf-8'))
 
 
@@ -107,6 +107,10 @@ class APIError(Exception):
 
     def __repr__(self):
         return "<{0}.{1} code='{2.code}' detail='{2.detail}'>".format(
+            __name__, self.__class__.__name__, self)
+
+    def __str__(self):
+        return "[{0}.{1} {2.code}] {2.detail}".format(
             __name__, self.__class__.__name__, self)
 
 
@@ -133,6 +137,7 @@ class Connection(object):
 
         self.session = None
         self.room_ids = []
+        self.rooms = {}
 
         self.is_alive = False
 
@@ -188,7 +193,6 @@ class Connection(object):
             user = res["user"]
             self.name = user["name"]
             self.username = user["username"]
-        self.rooms = {}
         return res
 
     def destroy_session(self):
@@ -212,7 +216,7 @@ class Connection(object):
 
     def set_presence(self, presence):
         self._debug("requesting session/set_presence: " + presence)
-        res = self._post("session/set_presence",\
+        res = self._post("session/set_presence",
             {"session": self.session, "presence": presence, "nickname": self.nickname})
         self._debug("session/set_presence response: " + str(res))
         return res
@@ -240,14 +244,14 @@ class Connection(object):
 
     def get_archives(self, room_id, max_message_id, limit = 100):
         self._debug("requesting room/get_archives: " + room_id + " " + str(max_message_id))
-        res = self._get("room/get_archives",\
+        res = self._get("room/get_archives",
             {"session": self.session, "room": room_id, "before": max_message_id, "limit": limit})
         self._debug("room/get_archives response: " + str(res))
         return res
 
     def subscribe(self, room_id, reset = True):
         self._debug("requesting room/subscribe: " + room_id)
-        res = self._post("room/subscribe",\
+        res = self._post("room/subscribe",
             {"session": self.session, "room": room_id, "reset": str(reset).lower()})
         self._debug("room/subscribe response: " + str(res))
         self.counter = res["counter"]
@@ -261,7 +265,7 @@ class Connection(object):
 
     def say(self, room_id, text):
         self._debug("requesting room/say: " + room_id + " " + text)
-        res = self._post("room/say",\
+        res = self._post("room/say",
             {"session": self.session, "room": room_id, "nickname": self.nickname, "text": text.encode('utf-8')})
         self._debug("room/say response: " + str(res))
         return res
@@ -307,10 +311,9 @@ class Connection(object):
 
 
     def _on_error(self, e):
-        self._log_error("lingr.Connection.on_error type: "\
-            + str(type(e)) + ", detail: " + repr(e))
+        self._log_error(repr(e))
         # if self.session:
-            # self.destroy_session()
+        #     self.destroy_session()
         if self.is_alive:
             for h in self.error_hooks:
                 h(self, e)
@@ -330,12 +333,6 @@ class Connection(object):
             res = json.loads(connection.getresponse().read())
         except socket.timeout as e:
             self._debug("get request timed out: " + url)
-            if is_observe:
-                res = { "status" : "ok" }
-            else:
-                raise e
-        except httplib.BadStatusLine as e:
-            self._debug("BadStatusLine exception: " + url)
             if is_observe:
                 res = { "status" : "ok" }
             else:

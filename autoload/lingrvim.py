@@ -44,7 +44,7 @@ class LingrObserver(threading.Thread):
         try:
             self.lingr.start()
         except lingr.APIError as e:
-            echo_error(e.detail)
+            echo_error(str(e))
 
 
 class RenderOperation(object):
@@ -88,8 +88,8 @@ class LingrVim(object):
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
         if int(vim.eval('exists("g:lingr_vim_debug_log_file")')):
             echo_message("Lingr-Vim starts with debug mode")
-            self.lingr = lingr.Connection(user, password, True,\
-                logger=lingr._get_debug_logger(vim.eval('g:lingr_vim_debug_log_file')))
+            logger = lingr._get_debug_logger(vim.eval('g:lingr_vim_debug_log_file'))
+            self.lingr = lingr.Connection(user, password, True, logger=logger)
         else:
             self.lingr = lingr.Connection(user, password, True)
 
@@ -139,14 +139,21 @@ class LingrVim(object):
             for id, room in sender.rooms.iteritems():
                 if not id in self.messages:
                     self.messages[id] = []
-                    for m in room.backlog:
+
+                # merge backlog
+                # TODO: interpolate missing messsages using get_archives()
+                unread_count = 0
+                for m in room.backlog:
+                    if len(self.messages[id]) == 0 or self.messages[id][-1].id < m.id:
                         self.messages[id].append(m)
-                    self.unread_counts[id] = 0
+                        unread_count += 1
+                self.unread_counts[id] = unread_count
 
             # get rooms
             self.rooms = sender.rooms
             if not self.current_room_id:
                 self.current_room_id = sender.rooms.keys()[0]
+            self.unread_counts[self.current_room_id] = 0
 
             self.state = LingrVim.CONNECTED
             self.push_operation(RenderOperation(RenderOperation.CONNECTED))
@@ -162,20 +169,17 @@ class LingrVim(object):
             echo('Lingr-Vim has connected to Lingr')
 
         def error_hook(sender, error):
-            echo_error(str(error))
             self.state = LingrVim.OFFLINE
-
             if sender.auto_reconnect:
-                echo_message('Lingr-Vim will try re-connect after {0} seconds later'\
-                    .format(lingr.Connection.RETRY_INTERVAL))
                 self.state = LingrVim.RETRYING
 
-            self.push_operation(RenderOperation(RenderOperation.ERROR))
+            self.push_operation(RenderOperation(RenderOperation.ERROR,
+                {"error": str(error), "auto_reconnect": sender.auto_reconnect}))
 
         def message_hook(sender, room, message):
             self.messages[room.id].append(message)
             if self.current_room_id == room.id:
-                self.push_operation(RenderOperation(RenderOperation.MESSAGE,\
+                self.push_operation(RenderOperation(RenderOperation.MESSAGE,
                     {"message": message}))
             if not self.focused_buffer or self.current_room_id != room.id:
                 self.unread_counts[room.id] += 1
@@ -183,12 +187,12 @@ class LingrVim(object):
 
         def join_hook(sender, room, member):
             if self.current_room_id == room.id:
-                self.push_operation(RenderOperation(RenderOperation.PRESENCE,\
+                self.push_operation(RenderOperation(RenderOperation.PRESENCE,
                     {"is_join": True, "member": member}))
 
         def leave_hook(sender, room, member):
             if self.current_room_id == room.id:
-                self.push_operation(RenderOperation(RenderOperation.PRESENCE,\
+                self.push_operation(RenderOperation(RenderOperation.PRESENCE,
                     {"is_join": False, "member": member}))
 
         self.lingr.connected_hooks.append(connected_hook)
@@ -230,14 +234,16 @@ class LingrVim(object):
 
     def get_member_id_by_lnum(self, lnum):
         members = self.rooms[self.current_room_id].members.values()
-        name = self.members_buffer[lnum - 1][:-2] # TODO: fix for owner
+        name = self.members_buffer[lnum - 1].decode(VIM_ENCODING)
+        owner_index = name.find('(owner)')
+        index = owner_index if owner_index > 0 else -2
+        name = name[:index]
 
         return [x for x in members if x.name == name][0].username
 
     def get_archives(self):
         messages = self.messages[self.current_room_id]
-        res = self.lingr.get_archives(\
-            self.current_room_id, messages[0].id)
+        res = self.lingr.get_archives(self.current_room_id, messages[0].id)
 
         archives = []
         for m in res["messages"]:
@@ -252,7 +258,8 @@ class LingrVim(object):
             try:
                 return self.lingr.say(self.current_room_id, text.decode(VIM_ENCODING))
             except socket.timeout as e:
-                echo_error('The request was timed out: Say "{0}".\nPlease retry later.'.format(text))
+                echo_error('The request was timed out: Say "{0}".'\
+                    .format(text))
                 return False
         else:
             return False
@@ -386,6 +393,11 @@ class LingrVim(object):
 
             elif op.type == RenderOperation.ERROR:
                 self._update_messages_statusline()
+                echo_error(op.params["error"])
+                if op.params["auto_reconnect"]:
+                    vim.command("redraw")
+                    echo_message('Lingr-Vim will try re-connect {0} seconds later'\
+                        .format(lingr.Connection.RETRY_INTERVAL))
 
         self.render_queue = []
         self.queue_lock.release()
