@@ -232,7 +232,7 @@ function! s:BufferBase.setup_base()
 
     " autocmd
     autocmd! * <buffer>
-    autocmd BufAdd,BufEnter <buffer> silent call s:BufferBase.on_enter()
+    autocmd BufEnter <buffer> silent call s:BufferBase.on_enter()
     autocmd BufLeave <buffer> silent call s:BufferBase.on_leave()
     autocmd CursorHold <buffer> silent call s:BufferBase.polling()
 endfunction
@@ -384,6 +384,10 @@ endfunction
 function! s:MessagesBuffer_show_say_buffer()
     call s:SayBuffer.initialize()
     call feedkeys('GA', 'n')
+    python <<EOM
+# coding=utf-8
+lingr_vim.set_focus(vim.eval("bufname('')"))
+EOM
 endfunction
 " }}}
 
@@ -500,11 +504,16 @@ function! s:SayBuffer.setup()
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-say-say)
-                \ :<C-u>call <SID>SayBuffer_say()<CR>
+                \ :<C-u>call <SID>SayBuffer_say() \| call <SID>SayBuffer_close()<CR>
     nnoremap <buffer> <silent> <Plug>(lingr-say-close)
                 \ :<C-u>call <SID>SayBuffer_close()<CR>
     nmap <buffer> <silent> <CR> <Plug>(lingr-say-say)
     nmap <buffer> <silent> <Esc> <Plug>(lingr-say-close)
+
+    " for custormizing
+    " ex) autocmd FileType lingr-say imap <buffer> <CR> <Plug>(lingr-say-insert-mode-say)
+    inoremap <buffer> <silent> <Plug>(lingr-say-insert-mode-say)
+                \ <Esc>:<C-u>call <SID>SayBuffer_say()<CR>i
 endfunction
 
 function! s:SayBuffer_close()
@@ -517,7 +526,6 @@ function! s:SayBuffer_say()
         call lingr#say(text)
     endif
     normal! ggdG
-    call s:SayBuffer_close()
 endfunction
 " }}}
 
