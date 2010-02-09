@@ -401,4 +401,17 @@ class LingrVim(object):
     def _auto_scroll(self):
         if self.focused_buffer == vim.eval('s:MESSAGES_BUFNAME')\
             and int(vim.eval("line('$') - line('.') < g:lingr_vim_remain_height_to_auto_scroll")):
-                vim.command('silent $')
+            vim.command('silent $')
+
+        elif self.focused_buffer:
+            bufnum, lnum, col, off = vim.eval('getpos(".")')
+            current_winnr = vim.eval('winnr()')
+
+            messages_winnr = vim.eval('bufwinnr({0.number})'.format(self.messages_buffer))
+            vim.command("{0} wincmd w".format(messages_winnr))
+
+            vim.command('silent $')
+            vim.command('redraw')
+
+            vim.command("{0} wincmd w".format(current_winnr))
+            vim.eval('setpos(".", [{0}, {1}, {2}, {3}])'.format(bufnum, lnum, col, off))
