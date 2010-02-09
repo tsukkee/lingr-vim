@@ -62,14 +62,14 @@ def make_modifiable(buffer, func):
         vim.command("call setbufvar({0.number}, '&modifiable', 0)".format(buffer))
     return do
 
-def echo(message):
-    vim.command('echo "{0}"'.format(message))
-
 def echo_message(message):
     vim.command('echomsg "{0}"'.format(message))
 
 def echo_error(message):
-    vim.command('echoerr "Lingr-Vim Error: {0}"'.format(message))
+    # vim.command('echoerr "Lingr-Vim Error: {0}"'.format(message))
+    vim.command('echohl ErrorMsg')
+    echo_message("Lingr-Vim Error: {0}".format(message))
+    vim.command('echohl None')
 
 def set_statusline(buffer, statusline):
     vim.command("call setbufvar({0.number}, '&statusline', '{1}')".format(\
@@ -157,7 +157,6 @@ class LingrVim(object):
 
             self.state = LingrVim.CONNECTED
             self.push_operation(RenderOperation(RenderOperation.CONNECTED))
-            vim.command('doautocmd CursorHold') # redraw contents
 
             current_bufnr = int(vim.eval("bufnr('')"))
             if current_bufnr in [
@@ -166,15 +165,17 @@ class LingrVim(object):
                 self.rooms_buffer.number]:
                 self.focused_buffer = vim.eval("bufname('')")
 
-            echo('Lingr-Vim has connected to Lingr')
+            echo_message('Lingr-Vim has connected to Lingr')
 
         def error_hook(sender, error):
             self.state = LingrVim.OFFLINE
+            echo_error(str(error))
             if sender.auto_reconnect:
                 self.state = LingrVim.RETRYING
+                echo_message('Lingr-Vim will try re-connect {0} seconds later'\
+                    .format(lingr.Connection.RETRY_INTERVAL))
 
-            self.push_operation(RenderOperation(RenderOperation.ERROR,
-                {"error": str(error), "auto_reconnect": sender.auto_reconnect}))
+            self.push_operation(RenderOperation(RenderOperation.ERROR))
 
         def message_hook(sender, room, message):
             self.messages[room.id].append(message)
@@ -393,11 +394,6 @@ class LingrVim(object):
 
             elif op.type == RenderOperation.ERROR:
                 self._update_messages_statusline()
-                echo_error(op.params["error"])
-                if op.params["auto_reconnect"]:
-                    vim.command("redraw")
-                    echo_message('Lingr-Vim will try re-connect {0} seconds later'\
-                        .format(lingr.Connection.RETRY_INTERVAL))
 
         self.render_queue = []
         self.queue_lock.release()

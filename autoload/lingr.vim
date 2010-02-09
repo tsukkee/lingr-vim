@@ -133,6 +133,10 @@ EOM
     augroup END
 
     command! LingrExit call lingr#exit()
+
+    redraw
+    call s:BufferBase.on_enter()
+    call s:BufferBase.polling()
 endfunction
 
 function! lingr#exit()
@@ -188,7 +192,9 @@ function! lingr#open_url(url)
         execute 'silent !' printf(g:lingr_vim_command_to_open_url, shellescape(a:url, 'shell'))
         echo "open url:" a:url . "... done!"
     else
-        echoerr "Failed to open given url: " . a:url
+        echohl ErrorMsg
+        echomsg "Failed to open given url: " . a:url
+        echohl None
     endif
 endfunction
 
@@ -333,7 +339,9 @@ vim.command('let initialized = {0}'.format(\
 EOM
 
     if !initialized
-        echoerr "Lingr-Vim has not been initialized"
+        echohl ErrorMsg
+        echomsg "Lingr-Vim has not been initialized"
+        echohl None
         return
     endif
 
