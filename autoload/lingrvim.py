@@ -71,9 +71,9 @@ def echo_error(message):
     echo_message("Lingr-Vim Error: {0}".format(message))
     vim.command('echohl None')
 
-def set_statusline(buffer, statusline):
-    vim.command("call setbufvar({0.number}, '&statusline', '{1}')".format(
-        buffer, statusline))
+def redraw_statusline():
+    # force redraw statusline. see :help 'statusline'
+    vim.command('let &ro=&ro')
 
 class LingrVim(object):
     JOIN_MESSAGE         = "-- {0} is now online"
@@ -282,8 +282,7 @@ class LingrVim(object):
         self.last_speaker_id = ""
         for m in self.messages[self.current_room_id]:
             self._show_message(m)
-
-        self._update_messages_statusline()
+        redraw_statusline()
 
     def _render_rooms(self):
         del self.rooms_buffer[:]
@@ -315,9 +314,7 @@ class LingrVim(object):
             self.members_buffer.append(text)
 
         del self.members_buffer[0]
-
-        statusline = LingrVim.MEMBERS_STATUSLINE.format(len(onlines), len(members))
-        set_statusline(self.members_buffer, statusline)
+        redraw_statusline()
 
     def _show_message(self, message):
         if message.type == "dummy":
@@ -341,19 +338,6 @@ class LingrVim(object):
             else LingrVim.LEAVE_MESSAGE
         self.messages_buffer.append(
             format.format(member.name.encode(VIM_ENCODING)))
-
-    def _update_messages_statusline(self):
-        room_name = self.rooms[self.current_room_id].name.encode(VIM_ENCODING)
-        state = ""
-        if self.state == LingrVim.CONNECTED:
-            state = "connected"
-        elif self.state == LingrVim.OFFLINE:
-            state = "offline"
-        elif self.state == LingrVim.RETRYING:
-            state = "waiting for reconnect..."
-
-        statusline = LingrVim.MESSAGES_STATUSLINE.format(room_name, state)
-        set_statusline(self.messages_buffer, statusline)
 
     def _dummy_message(self):
         return lingr.Message({
@@ -379,6 +363,7 @@ class LingrVim(object):
         for op in self.render_queue:
             if op.type == RenderOperation.CONNECTED:
                 self.render_all()
+                self._auto_scroll()
 
             elif op.type == RenderOperation.MESSAGE:
                 self.show_message(op.params["message"])
@@ -393,7 +378,9 @@ class LingrVim(object):
                 self.render_rooms()
 
             elif op.type == RenderOperation.ERROR:
-                self._update_messages_statusline()
+                # vim.command('echoerr ""')
+                # echo_error("Error test")
+                redraw_statusline()
 
         self.render_queue = []
         self.queue_lock.release()

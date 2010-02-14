@@ -185,9 +185,9 @@ function! lingr#open_url(url)
     if match(a:url, s:URL_PATTERN) == 0 && g:lingr_vim_command_to_open_url != ""
         echo "open url:" a:url . "..."
         sleep 1m
-        redraw
         " Do we need Vim 7.2 or higher to use second argument of shellescape()?
         execute 'silent !' printf(g:lingr_vim_command_to_open_url, shellescape(a:url, 'shell'))
+        redraw!
         echo "open url:" a:url . "... done!"
     else
         echohl ErrorMsg
@@ -203,6 +203,50 @@ function! lingr#unread_count()
 import vim
 if lingr_vim and lingr_vim.is_alive():
     vim.command('let result = "{0}"'.format(int(lingr_vim.unread_count())))
+EOM
+    return result
+endfunction
+
+function! lingr#status()
+    let result = ""
+    python <<EOM
+# coding=utf-8
+import vim
+import lingrvim
+if lingr_vim and lingr_vim.is_alive():
+    state = ""
+    if lingr_vim.state == lingrvim.LingrVim.CONNECTED:
+        state = "connected"
+    elif lingr_vim.state == lingrvim.LingrVim.OFFLINE:
+        state = "offline"
+    elif lingr_vim.state == lingrvim.LingrVim.RETRYING:
+        state = "waiting for reconnect..."
+    vim.command('let result = "{0}"'.format(state))
+EOM
+    return result
+endfunction
+
+function! lingr#current_room()
+    let result = ""
+    python <<EOM
+# coding=utf-8
+import vim
+if lingr_vim and lingr_vim.is_alive():
+    room_name = lingr_vim.rooms[lingr_vim.current_room_id].name.encode(vim.eval('&encoding'))
+    vim.command('let result = "{0}"'.format(room_name))
+EOM
+    return result
+endfunction
+
+function! lingr#online_member_count()
+    let result = ""
+    python <<EOM
+# coding=utf-8
+import vim
+if lingr_vim and lingr_vim.is_alive():
+    members = lingr_vim.rooms[lingr_vim.current_room_id].members.values()
+    count = len(filter(lambda x: x.presence, members))
+    vim.command('let result = "{0}"'.format(count))
 EOM
     return result
 endfunction
@@ -293,7 +337,7 @@ endfunction
 function! s:MessagesBuffer.setup()
     " option
     let &filetype = s:MESSAGES_FILETYPE
-    setlocal statusline=lingr-messages
+    setlocal statusline=%f\ (%{lingr#current_room()})\ [%{lingr#status()}]
 
     " autocmd
     autocmd WinEnter <buffer> call s:MessagesBuffer.scroll_to_end()
@@ -404,7 +448,7 @@ endfunction
 function! s:MembersBuffer.setup()
     " option
     let &filetype = s:MEMBERS_FILETYPE
-    setlocal statusline=lingr-members
+    setlocal statusline=%f\ (%{lingr#online_member_count()}/%L)
 
     " autocmd
     " nothing to do
@@ -443,7 +487,7 @@ endfunction
 function! s:RoomsBuffer.setup()
     " option
     let &filetype = s:ROOMS_FILETYPE
-    setlocal statusline=lingr-rooms
+    setlocal statusline=%f
 
     " autocmd
     " nothing to do
@@ -496,7 +540,7 @@ endfunction
 function! s:SayBuffer.setup()
     " option
     let &filetype = s:SAY_FILETYPE
-    setlocal statusline=lingr-say
+    setlocal statusline=%f
     setlocal nobuflisted
 
     " autocmd
