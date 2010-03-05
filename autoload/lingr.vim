@@ -75,16 +75,14 @@ endif
 " }}}
 
 " Initialize {{{
-" append python path
-let s:path = expand('<sfile>:p:h')
-
 python <<EOM
 # coding=utf-8
 import sys
 import vim
-sys.path.append(vim.eval('s:path'))
-
-lingr_vim = None
+if not vim.eval('expand("<sfile>:p:h")') in sys.path:
+    # append python path
+    sys.path.append(vim.eval('expand("<sfile>:p:h")'))
+    lingr_vim = None
 EOM
 " }}}
 
@@ -509,9 +507,9 @@ function! s:RoomsBuffer_select()
 # coding=utf-8
 import vim
 if lingr_vim.is_alive():
-    bufnum, lnum, col, off = vim.eval('getpos(".")')
-    lingr_vim.select_room_by_lnum(int(lnum))
-    vim.eval('setpos(".", [{0}, {1}, {2}, {3}])'.format(bufnum, lnum, col, off))
+    cursor = vim.current.window.cursor
+    lingr_vim.select_room_by_lnum(cursor[0])
+    vim.current.window.cursor = cursor
 EOM
 endfunction
 

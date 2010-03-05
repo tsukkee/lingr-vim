@@ -66,7 +66,6 @@ def echo_message(message):
     vim.command('echomsg "{0}"'.format(message))
 
 def echo_error(message):
-    # vim.command('echoerr "Lingr-Vim Error: {0}"'.format(message))
     vim.command('echohl ErrorMsg')
     echo_message("Lingr-Vim Error: {0}".format(message))
     vim.command('echohl None')
@@ -80,8 +79,6 @@ class LingrVim(object):
     LEAVE_MESSAGE        = "-- {0} is now offline"
     GET_ARCHIVES_MESSAGE = "[Read more from archives...]"
     MESSAGE_HEADER       = "{0}({1}):"
-    MEMBERS_STATUSLINE   = "lingr-members ({0}/{1})"
-    MESSAGES_STATUSLINE  = "lingr-messages ({0}) [{1}]"
 
     CONNECTED, OFFLINE, RETRYING = range(3)
 
@@ -118,7 +115,7 @@ class LingrVim(object):
         # for display messages
         self.current_room_id = ""
         self.last_speaker_id = ""
-        self.rooms = []
+        self.rooms = None
         self.messages = {} # {"room1": [message1, message2], "room2": [message1 ...
         self.unread_counts = {} # {"room1": 2, "room2": 0 ...
         self.focused_buffer = None
@@ -266,9 +263,7 @@ class LingrVim(object):
             return False
 
     def unread_count(self):
-        def sum(a, b):
-            return a + b
-        return reduce(sum, self.unread_counts.values())
+        return reduce(lambda a, b: a + b, self.unread_counts.values())
 
     def render_all(self):
         self.render_messages()
@@ -391,7 +386,7 @@ class LingrVim(object):
             vim.command('silent $')
 
         elif self.focused_buffer:
-            bufnum, lnum, col, off = vim.eval('getpos(".")')
+            cursor = vim.current.window.cursor
             current_winnr = vim.eval('winnr()')
 
             messages_winnr = vim.eval('bufwinnr({0.number})'.format(self.messages_buffer))
@@ -401,4 +396,4 @@ class LingrVim(object):
             vim.command('redraw')
 
             vim.command("{0} wincmd w".format(current_winnr))
-            vim.eval('setpos(".", [{0}, {1}, {2}, {3}])'.format(bufnum, lnum, col, off))
+            vim.current.window.cursor = cursor

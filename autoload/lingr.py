@@ -42,7 +42,7 @@ class Member(object):
         self.name = res["name"]
         self.icon_url = res["icon_url"]
         self.owner = res["owner"]
-        self.presence = res["presence"] == "online"
+        self.presence = res["is_online"]
 
     def __repr__(self):
         return "<{0}.{1} {2.username} {3}>".format(
@@ -54,7 +54,7 @@ class Room(object):
         self.id = res["id"]
         self.name = res["name"]
         self.blurb = res["blurb"]
-        self.public = res["public"]
+        self.public = res["is_public"]
         self.backlog = []
         self.members = {}
 
@@ -188,7 +188,7 @@ class Connection(object):
         self.session = res["session"]
         self.nickname = res["nickname"]
         self.public_id = res["public_id"]
-        self.presence = res["presence"]
+        self.presence = res["is_online"]
         if "user" in res:
             user = res["user"]
             self.name = user["name"]
