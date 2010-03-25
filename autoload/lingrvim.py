@@ -115,9 +115,10 @@ class LingrVim(object):
         # for display messages
         self.current_room_id = ""
         self.last_speaker_id = ""
-        self.rooms = None
-        self.messages = {} # {"room1": [message1, message2], "room2": [message1 ...
-        self.unread_counts = {} # {"room1": 2, "room2": 0 ...
+        self.room_ids = None    # ["room1", "room2", "room3", ...
+        self.rooms = None       # {"room1": lingr.Room, "room2": lingr.Room, ...
+        self.messages = {}      # {"room1": [message1, message2], "room2": [message1, ...
+        self.unread_counts = {} # {"room1": 2, "room2": 0, ...
         self.focused_buffer = None
 
         # for threading
@@ -147,9 +148,10 @@ class LingrVim(object):
                 self.unread_counts[id] = unread_count
 
             # get rooms
+            self.room_ids = sender.room_ids
             self.rooms = sender.rooms
             if not self.current_room_id:
-                self.current_room_id = sender.rooms.keys()[0]
+                self.current_room_id = sender.room_ids[0]
             self.unread_counts[self.current_room_id] = 0
 
             self.state = LingrVim.CONNECTED
@@ -213,19 +215,18 @@ class LingrVim(object):
             self.focused_buffer = None
 
     def get_room_id_by_lnum(self, lnum):
-        return self.rooms.keys()[lnum - 1]
+        return self.room_ids[lnum - 1]
 
     def select_room_by_lnum(self, lnum):
         self.select_room(self.get_room_id_by_lnum(lnum))
 
     def select_room_by_offset(self, offset):
-        rooms = self.rooms.keys()
+        rooms = self.room_ids
         next = (rooms.index(self.current_room_id) + offset) % len(rooms)
         self.select_room(rooms[next])
 
     def select_room(self, room_id):
-        rooms = self.rooms.keys()
-        if room_id in rooms and self.current_room_id != room_id:
+        if room_id in self.room_ids and self.current_room_id != room_id:
             self.current_room_id = room_id
             self.unread_counts[room_id] = 0
             self.render_all()
@@ -282,11 +283,11 @@ class LingrVim(object):
     def _render_rooms(self):
         del self.rooms_buffer[:]
 
-        for id, room in self.rooms.iteritems():
+        for id in self.room_ids:
             mark = " *" if id == self.current_room_id else ""
             unread = " (" + str(self.unread_counts[id]) + ")"\
                 if self.unread_counts[id] > 0 else ""
-            text = room.name.encode(VIM_ENCODING) + mark + unread
+            text = self.rooms[id].name.encode(VIM_ENCODING) + mark + unread
             self.rooms_buffer.append(text)
 
         del self.rooms_buffer[0]

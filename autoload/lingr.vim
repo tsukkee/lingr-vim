@@ -41,7 +41,7 @@ let s:ARCHIVES_DELIMITER = '--------------------'
 " Settings {{{
 function! s:set_default(variable_name, default)
     if !exists(a:variable_name)
-        execute printf('let %s = "%s"', a:variable_name, a:default)
+        let {a:variable_name} = a:default
     endif
 endfunction
 
