@@ -41,12 +41,26 @@ class Member(object):
         self.username = res["username"]
         self.name = res["name"]
         self.icon_url = res["icon_url"]
+        self.timestamp = res["timestamp"]
         self.owner = res["owner"]
         self.presence = res["is_online"]
+        self.pokeable = res["pokeable"]
 
     def __repr__(self):
         return "<{0}.{1} {2.username} {3}>".format(
             __name__, self.__class__.__name__, self, self.name.encode('utf-8'))
+
+
+class Bots(object):
+    def __init__(self, res):
+        self.id = res["id"]
+        self.name = res["name"]
+        self.icon_url = res["icon_url"]
+        self.status = res["status"]
+
+    def __repr__(self):
+        return "<{0}.{1} {2.name}>".format(
+            __name__, self.__class__.__name__, self)
 
 
 class Room(object):
@@ -57,6 +71,7 @@ class Room(object):
         self.public = res["is_public"]
         self.backlog = []
         self.members = {}
+        self.bots = []
 
         if "messages" in res:
             for m in res["messages"]:
@@ -67,6 +82,9 @@ class Room(object):
                 for u in res["roster"]["members"]:
                     m = Member(u)
                     self.members[m.username] = m
+            if "bots" in res["roster"]:
+                for b in res["roster"]["bots"]:
+                    self.bots.append(Bots(b))
 
     def add_member(self, member):
         self.members[member.username] = member
@@ -80,10 +98,13 @@ class Message(object):
 
     def __init__(self, res):
         self.id = res["id"]
+        self.local_id = res["local_id"]
+        self.public_session_id = res["public_session_id"]
+        self.room = res["room"]
         self.type = res["type"]
         self.nickname = res["nickname"]
         self.speaker_id = res["speaker_id"]
-        self.public_session_id = res["public_session_id"]
+        self.icon_url = res["icon_url"]
         self.text = res["text"]
 
         # TODO: use GMT?

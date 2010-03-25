@@ -31,10 +31,12 @@ endif
 
 syntax match lingrMembersOnline /.*\ze +$/
 syntax match lingrMembersOffline /.*\ze -$/
-syntax match lingrMembersMarker /[-+]$/
+syntax match lingrMembersBot /.*\ze \*$/
+syntax match lingrMembersMarker /[-+*]$/
 
 highlight default link lingrMembersOnline String
 highlight default link lingrMembersOffline Comment
+highlight default link lingrMembersBot Special
 highlight default link lingrMembersMarker Ignore
 
 let b:current_syntax = 'lingr-members'

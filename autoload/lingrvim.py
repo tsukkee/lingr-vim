@@ -309,6 +309,9 @@ class LingrVim(object):
             text = m.name.encode(VIM_ENCODING) + owner + " -"
             self.members_buffer.append(text)
 
+        for b in self.lingr.rooms[self.current_room_id].bots:
+            self.members_buffer.append(b.name.encode(VIM_ENCODING) + " *")
+
         del self.members_buffer[0]
         redraw_statusline()
 
