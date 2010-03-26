@@ -70,7 +70,7 @@ class Room(object):
         self.blurb = res["blurb"]
         self.public = res["is_public"]
         self.backlog = []
-        self.members = {}
+        self.members = []
         self.bots = []
 
         if "messages" in res:
@@ -79,15 +79,18 @@ class Room(object):
 
         if "roster" in res:
             if "members" in res["roster"]:
-                for u in res["roster"]["members"]:
-                    m = Member(u)
-                    self.members[m.username] = m
+                for m in res["roster"]["members"]:
+                    self.members.append(Member(m))
             if "bots" in res["roster"]:
                 for b in res["roster"]["bots"]:
                     self.bots.append(Bots(b))
 
     def add_member(self, member):
-        self.members[member.username] = member
+        self.members.append(member)
+
+    def find_member_by_username(self, username):
+        m = [m for m in self.members if m.username == username]
+        return m[0] if len(m) > 0 else None
 
     def __repr__(self):
         return "<{0}.{1} {2.id}>".format(__name__, self.__class__.__name__, self)
@@ -315,21 +318,20 @@ class Connection(object):
                     if d["room"] in self.rooms:
                         room = self.rooms[d["room"]]
                         username = d["username"]
+                        member = room.find_member_by_username(username)
+                        if not member:
+                            return # can't find member
+
                         status = d["status"] if "status" in d else None
                         if status == "online":
-                            if username in room.members:
-                                m = room.members[username]
-                                m.presence = True
-                                for h in self.join_hooks:
-                                    h(self, room, m)
+                            member.presence = True
+                            for h in self.join_hooks:
+                                h(self, room, member)
 
                         elif status == "offline":
-                            if username in room.members:
-                                m = room.members[username]
-                                m.presence = False
-                                for h in self.leave_hooks:
-                                    h(self, room, m)
-
+                            member.presence = False
+                            for h in self.leave_hooks:
+                                h(self, room, member)
 
     def _on_error(self, e):
         self._log_error(repr(e))

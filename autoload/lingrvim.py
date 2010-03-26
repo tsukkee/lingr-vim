@@ -115,10 +115,11 @@ class LingrVim(object):
         # for display messages
         self.current_room_id = ""
         self.last_speaker_id = ""
-        self.room_ids = None    # ["room1", "room2", "room3", ...
-        self.rooms = None       # {"room1": lingr.Room, "room2": lingr.Room, ...
-        self.messages = {}      # {"room1": [message1, message2], "room2": [message1, ...
-        self.unread_counts = {} # {"room1": 2, "room2": 0, ...
+        self.room_ids = None      # ["room1", "room2", "room3", ...
+        self.rooms = None         # {"room1": lingr.Room, "room2": lingr.Room, ...
+        self.current_members = [] # ["online1", "online2", ... , "offline1", ... , "bot1", ...
+        self.messages = {}        # {"room1": [message1, message2], "room2": [message1, ...
+        self.unread_counts = {}   # {"room1": 2, "room2": 0, ...
         self.focused_buffer = None
 
         # for threading
@@ -232,13 +233,8 @@ class LingrVim(object):
             self.render_all()
 
     def get_member_id_by_lnum(self, lnum):
-        members = self.rooms[self.current_room_id].members.values()
-        name = self.members_buffer[lnum - 1].decode(VIM_ENCODING)
-        owner_index = name.find('(owner)')
-        index = owner_index if owner_index > 0 else -2
-        name = name[:index]
-
-        return [x for x in members if x.name == name][0].username
+        m = self.current_members[lnum - 1]
+        return m.username if hasattr(m, 'username') else 'bot/' + m.id
 
     def get_archives(self):
         messages = self.messages[self.current_room_id]
@@ -294,8 +290,9 @@ class LingrVim(object):
 
     def _render_members(self):
         del self.members_buffer[:]
+        del self.current_members[:]
 
-        members = self.rooms[self.current_room_id].members.values()
+        members = self.rooms[self.current_room_id].members
         onlines = filter(lambda x: x.presence, members)
         offlines = filter(lambda x: not x.presence, members)
 
@@ -303,14 +300,17 @@ class LingrVim(object):
             owner = '(owner)' if m.owner else ''
             text = m.name.encode(VIM_ENCODING) + owner + " +"
             self.members_buffer.append(text)
+            self.current_members.append(m)
 
         for m in offlines:
             owner = '(owner)' if m.owner else ''
             text = m.name.encode(VIM_ENCODING) + owner + " -"
             self.members_buffer.append(text)
+            self.current_members.append(m)
 
         for b in self.lingr.rooms[self.current_room_id].bots:
             self.members_buffer.append(b.name.encode(VIM_ENCODING) + " *")
+            self.current_members.append(b)
 
         del self.members_buffer[0]
         redraw_statusline()
@@ -341,10 +341,13 @@ class LingrVim(object):
     def _dummy_message(self):
         return lingr.Message({
             'id': '-1',
+            'local_id': '-1',
+            'public_session_id': '-1',
+            'room': '',
             'type': 'dummy',
             'nickname': '-',
             'speaker_id': '-1',
-            'public_session_id': '-1',
+            'icon_url': '',
             'text': '-',
             'timestamp': time.strftime(lingr.Message.TIMESTAMP_FORMAT, time.gmtime())
             })

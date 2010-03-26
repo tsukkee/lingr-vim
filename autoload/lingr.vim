@@ -236,14 +236,40 @@ EOM
     return result
 endfunction
 
+function! lingr#member_count()
+    let result = ""
+    python <<EOM
+# coding=utf-8
+import vim
+if lingr_vim and lingr_vim.is_alive():
+    count = len(filter(lambda x: hasattr(x, 'presence'),
+        lingr_vim.current_members))
+    vim.command('let result = "{0}"'.format(count))
+EOM
+    return result
+endfunction
+
 function! lingr#online_member_count()
     let result = ""
     python <<EOM
 # coding=utf-8
 import vim
 if lingr_vim and lingr_vim.is_alive():
-    members = lingr_vim.rooms[lingr_vim.current_room_id].members.values()
-    count = len(filter(lambda x: x.presence, members))
+    count = len(filter(lambda x: hasattr(x, 'presence') and x.presence,
+        lingr_vim.current_members))
+    vim.command('let result = "{0}"'.format(count))
+EOM
+    return result
+endfunction
+
+function! lingr#offline_member_count()
+    let result = ""
+    python <<EOM
+# coding=utf-8
+import vim
+if lingr_vim and lingr_vim.is_alive():
+    count = len(filter(lambda x: hasattr(x, 'presence') and not x.presence,
+        lingr_vim.current_members))
     vim.command('let result = "{0}"'.format(count))
 EOM
     return result
@@ -446,7 +472,7 @@ endfunction
 function! s:MembersBuffer.setup()
     " option
     let &filetype = s:MEMBERS_FILETYPE
-    setlocal statusline=%f\ (%{lingr#online_member_count()}/%L)
+    setlocal statusline=%f\ (%{lingr#online_member_count()}/%{lingr#member_count()})
 
     " autocmd
     " nothing to do
