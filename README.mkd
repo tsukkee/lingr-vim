@@ -17,7 +17,9 @@ Of couse, your machine needs to be connected to web.
   * Use [MacVim-KaoriYa](http://code.google.com/p/macvim-kaoriya/)
   * Install with [MacPorts](http://www.macports.org/)
     * sudo port install vim +huge +python26
-* Other OS
+* Ubuntu/Debian
+  * Use vim-python package
+* Other OSs or distributions
   * Please let me know!
 
 ### Install Lingr-Vim
