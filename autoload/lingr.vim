@@ -128,6 +128,7 @@ EOM
     augroup plugin-lingr-vim
         autocmd!
         autocmd CursorHold * silent call s:BufferBase.rendering()
+        autocmd VimLeavePre * silent call lingr#exit()
     augroup END
 
     command! LingrExit call lingr#exit()
@@ -297,6 +298,8 @@ function! s:BufferBase.setup_base()
     setlocal bufhidden=hide
     setlocal foldmethod=manual
     setlocal foldcolumn=0
+    setlocal winfixwidth
+    setlocal winfixheight
 
     " autocmd
     autocmd! * <buffer>
