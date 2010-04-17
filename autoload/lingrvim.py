@@ -82,6 +82,8 @@ class LingrVim(object):
 
     CONNECTED, OFFLINE, RETRYING = range(3)
 
+    GET_ARCHIVES_INTERVAL = 5 # sec
+
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
         if int(vim.eval('exists("g:lingr_vim_debug_log_file")')):
             echo_message("Lingr-Vim starts with debug mode")
@@ -139,9 +141,31 @@ class LingrVim(object):
                 if not id in self.messages:
                     self.messages[id] = []
 
-                # merge backlog
-                # TODO: interpolate missing messsages using get_archives()
                 unread_count = self.unread_counts[id] if id in self.unread_counts else 0
+
+                # need to get more archives
+                if len(self.messages[id]) > 0 and self.messages[id][-1].id < room.backlog[0].id:
+                    need_to_get_more = True
+                    max_id = room.backlog[0].id
+                    append_messages = []
+                    while need_to_get_more:
+                        res = self.lingr.get_archives(id, max_id)
+                        archives = res['messages']
+                        archives.reverse()
+                        for m in archives:
+                            message = lingr.Message(m)
+                            if message.id == self.messages[id][-1].id:
+                                need_to_get_more = False
+                                break
+                            else:
+                                append_messages.insert(0, message)
+                                unread_count += 1
+                        max_id = append_messages[0].id
+                        append_messages.insert(0, self._dummy_message())
+                        # time.sleep(LingrVim.GET_ARCHIVES_INTERVAL)
+                    self.messages[id].extend(append_messages)
+
+                # merge backlog
                 for m in room.backlog:
                     if len(self.messages[id]) == 0 or self.messages[id][-1].id < m.id:
                         self.messages[id].append(m)
@@ -238,12 +262,17 @@ class LingrVim(object):
 
     def get_archives(self):
         messages = self.messages[self.current_room_id]
+        if len(messages) == 0:
+            return
+
         res = self.lingr.get_archives(self.current_room_id, messages[0].id)
 
         archives = []
         for m in res["messages"]:
             archives.append(lingr.Message(m))
-        archives.append(self._dummy_message())
+
+        if len(archives) > 0:
+            archives.append(self._dummy_message())
 
         self.messages[self.current_room_id] = archives + messages
         self.render_messages()
