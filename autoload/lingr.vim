@@ -138,6 +138,7 @@ EOM
         autocmd!
         autocmd CursorHold * silent call s:BufferBase.rendering()
         autocmd VimLeavePre * silent call lingr#exit()
+        autocmd User plugin-lingr-* silent echo 'do nothing'
     augroup END
 
     command! LingrExit call lingr#exit()
@@ -151,7 +152,7 @@ function! lingr#exit()
     redraw
 
     augroup plugin-lingr-vim
-        autocmd!
+        autocmd! CursorHold,VimLeavePre
     augroup END
 
     python <<EOM
@@ -167,6 +168,11 @@ EOM
     call s:MembersBuffer.destroy()
     call s:RoomsBuffer.destroy()
     call s:SayBuffer.destroy()
+
+    doautocmd User plugin-lingr-leave
+    augroup plugin-lingr-vim
+        autocmd! User
+    augroup END
 
     echo "Exiting Lingr-Vim... done!"
 endfunction

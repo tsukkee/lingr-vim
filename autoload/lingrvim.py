@@ -74,6 +74,10 @@ def redraw_statusline():
     # force redraw statusline. see :help 'statusline'
     vim.command('let &ro=&ro')
 
+def doautocmd(event):
+    vim.command('doautocmd User plugin-lingr-')
+
+
 class LingrVim(object):
     JOIN_MESSAGE         = "-- {0} is now online"
     LEAVE_MESSAGE        = "-- {0} is now offline"
@@ -395,23 +399,28 @@ class LingrVim(object):
             if op.type == RenderOperation.CONNECTED:
                 self.render_all()
                 self._auto_scroll()
+                doautocmd('connected')
 
             elif op.type == RenderOperation.MESSAGE:
                 self.show_message(op.params["message"])
                 self._auto_scroll()
+                doautocmd('message')
 
             elif op.type == RenderOperation.PRESENCE:
                 self.show_presence_message(op.params["is_join"], op.params["member"])
                 self.render_members()
                 self._auto_scroll()
+                doautocmd('presence')
 
             elif op.type == RenderOperation.UNREAD:
                 self.render_rooms()
+                doautocmd('unread')
 
             elif op.type == RenderOperation.ERROR:
                 # vim.command('echoerr ""')
                 # echo_error("Error test")
                 redraw_statusline()
+                doautocmd('error')
 
         self.render_queue = []
         self.queue_lock.release()
