@@ -211,9 +211,8 @@ class LingrVim(object):
 
         def message_hook(sender, room, message):
             self.messages[room.id].append(message)
-            if self.current_room_id == room.id:
-                self.push_operation(RenderOperation(RenderOperation.MESSAGE,
-                    {"message": message}))
+            self.push_operation(RenderOperation(RenderOperation.MESSAGE,
+                {"message": message, "room": room}))
             if not self.focused_buffer or self.current_room_id != room.id:
                 self.unread_counts[room.id] += 1
                 self.push_operation(RenderOperation(RenderOperation.UNREAD))
@@ -406,8 +405,9 @@ class LingrVim(object):
                 doautocmd('connected')
 
             elif op.type == RenderOperation.MESSAGE:
-                self.show_message(op.params["message"])
-                self._auto_scroll()
+                if self.current_room_id == op.params["room"].id:
+                    self.show_message(op.params["message"])
+                    self._auto_scroll()
                 self.last_message = op.params["message"]
                 doautocmd('message')
 
