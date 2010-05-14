@@ -46,11 +46,13 @@ python <<EOM
 # coding=utf-8
 import vim
 import sys
-major, minor, micro, releaserevel, serial = sys.version_info
-if major != 2 or minor != 6:
-    vim.command('let s:invalid_version = 1')
-else:
-    vim.command('let s:invalid_version = 0')
+def _lingr_temp():
+    major, minor, micro, releaselevel, serial = sys.version_info
+    if major != 2 or minor != 6:
+        vim.command('let s:invalid_version = 1')
+    else:
+        vim.command('let s:invalid_version = 0')
+_lingr_temp()
 EOM
 if s:invalid_version
     echoerr 'This plugin needs python 2.6'

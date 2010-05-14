@@ -75,16 +75,30 @@ endif
 " }}}
 
 " Initialize {{{
+let s:path = expand("<sfile>:p:h")
 python <<EOM
 # coding=utf-8
 import sys
 import vim
-if not vim.eval('expand("<sfile>:p:h")') in sys.path:
-    # append python path
-    sys.path.append(vim.eval('expand("<sfile>:p:h")'))
+if not vim.eval('s:path') in sys.path:
+    # append the path to load lingr_vim.py and lingr.py
+    sys.path.append(vim.eval('s:path'))
     lingr_vim = None
+import lingrvim
 EOM
 " }}}
+
+" Python Utilities {{{
+python <<EOM
+# coding=utf-8
+def do_if_alive(func, show_error=False, *args, **keywords):
+    if lingr_vim and lingr_vim.is_alive():
+        func(*args, **keywords)
+    elif show_error:
+        lingrvim.echo_error("Lingr-Vim has not been initialized")
+EOM
+" }}}
+
 
 " Interface {{{
 function! lingr#launch(use_setting)
@@ -106,12 +120,8 @@ function! lingr#launch(use_setting)
     call s:MembersBuffer.initialize()
     call s:RoomsBuffer.initialize()
 
-    " import lingrvim
     python <<EOM
 # coding=utf-8
-import lingr
-import lingrvim
-
 if lingr_vim:
     lingr_vim.destroy()
 
@@ -165,15 +175,12 @@ endfunction
 function! lingr#say(text)
     python <<EOM
 # coding=utf-8
-import lingrvim
-
-if lingr_vim and lingr_vim.is_alive():
+def _lingr_temp():
     if lingr_vim.say(vim.eval('a:text')):
         pass
     else:
         lingrvim.echo_error("Failed to say: {0}".format(vim.eval('a:text')))
-else:
-    lingrvim.echo_error("Lingr-Vim has not been initialized")
+do_if_alive(_lingr_temp, show_error=True)
 EOM
 endfunction
 
@@ -199,9 +206,7 @@ function! lingr#unread_count()
     let result = -1
     python <<EOM
 # coding=utf-8
-import vim
-if lingr_vim and lingr_vim.is_alive():
-    vim.command('let result = "{0}"'.format(int(lingr_vim.unread_count())))
+do_if_alive(lambda: vim.command("let result = '{0}'".format(lingr_vim.unread_count())))
 EOM
     return result
 endfunction
@@ -210,9 +215,7 @@ function! lingr#status()
     let result = ""
     python <<EOM
 # coding=utf-8
-import vim
-import lingrvim
-if lingr_vim and lingr_vim.is_alive():
+def _lingr_temp():
     state = ""
     if lingr_vim.state == lingrvim.LingrVim.CONNECTED:
         state = "connected"
@@ -221,6 +224,7 @@ if lingr_vim and lingr_vim.is_alive():
     elif lingr_vim.state == lingrvim.LingrVim.RETRYING:
         state = "waiting for reconnect..."
     vim.command('let result = "{0}"'.format(state))
+do_if_alive(_lingr_temp)
 EOM
     return result
 endfunction
@@ -229,10 +233,10 @@ function! lingr#current_room()
     let result = ""
     python <<EOM
 # coding=utf-8
-import vim
-if lingr_vim and lingr_vim.is_alive():
+def _lingr_temp():
     room_name = lingr_vim.rooms[lingr_vim.current_room_id].name.encode(vim.eval('&encoding'))
     vim.command('let result = "{0}"'.format(room_name))
+do_if_alive(_lingr_temp)
 EOM
     return result
 endfunction
@@ -241,11 +245,11 @@ function! lingr#member_count()
     let result = ""
     python <<EOM
 # coding=utf-8
-import vim
-if lingr_vim and lingr_vim.is_alive():
+def _lingr_temp():
     count = len(filter(lambda x: hasattr(x, 'presence'),
         lingr_vim.current_members))
     vim.command('let result = "{0}"'.format(count))
+do_if_alive(_lingr_temp)
 EOM
     return result
 endfunction
@@ -254,11 +258,11 @@ function! lingr#online_member_count()
     let result = ""
     python <<EOM
 # coding=utf-8
-import vim
-if lingr_vim and lingr_vim.is_alive():
+def _lingr_temp():
     count = len(filter(lambda x: hasattr(x, 'presence') and x.presence,
         lingr_vim.current_members))
     vim.command('let result = "{0}"'.format(count))
+do_if_alive(_lingr_temp)
 EOM
     return result
 endfunction
@@ -267,11 +271,11 @@ function! lingr#offline_member_count()
     let result = ""
     python <<EOM
 # coding=utf-8
-import vim
-if lingr_vim and lingr_vim.is_alive():
+def _lingr_temp():
     count = len(filter(lambda x: hasattr(x, 'presence') and not x.presence,
         lingr_vim.current_members))
     vim.command('let result = "{0}"'.format(count))
+do_if_alive(_lingr_temp)
 EOM
     return result
 endfunction
@@ -318,11 +322,8 @@ endfunction
 function! s:BufferBase.on_enter()
     python <<EOM
 # coding=utf-8
-# after lingr_vim has initialized
-if lingr_vim and lingr_vim.is_alive():
-    lingr_vim.set_focus(vim.eval("bufname('')"))
+do_if_alive(lambda: lingr_vim.set_focus(vim.eval("bufname('')")))
 EOM
-    " set 'updatetime'
     let b:saved_updatetime = &updatetime
     let &updatetime = g:lingr_vim_update_time
 endfunction
@@ -330,11 +331,8 @@ endfunction
 function! s:BufferBase.on_leave()
     python <<EOM
 # coding=utf-8
-# after lingr_vim has initialized
-if lingr_vim and lingr_vim.current_room_id:
-    lingr_vim.set_focus(None)
+do_if_alive(lambda: lingr_vim.set_focus(None))
 EOM
-    " reset 'updatetime'
     if exists('b:saved_updatetime')
         let &updatetime = b:saved_updatetime
     endif
@@ -347,7 +345,7 @@ endfunction
 function! s:BufferBase.rendering()
     python <<EOM
 # coding=utf-8
-lingr_vim.process_queue()
+do_if_alive(lambda: lingr_vim.process_queue())
 EOM
 endfunction
 " }}}
@@ -402,19 +400,12 @@ function! s:MessagesBuffer_action()
     let initialized = 0
     python <<EOM
 # coding=utf-8
-import vim
-vim.command('let initialized = {0}'.format(\
-    int(bool(lingr_vim and lingr_vim.is_alive()))))
+do_if_alive(lambda: vim.command('let initialized = 1'), show_error=True)
 EOM
 
     if !initialized
-        echohl ErrorMsg
-        echomsg "Lingr-Vim has not been initialized"
-        echohl None
         return
-    endif
-
-    if line('.') == 1
+    elseif line('.') == 1
         call s:MessagesBuffer_get_archives()
     elseif match(expand('<cWORD>'), s:URL_PATTERN) == 0
         call lingr#open_url(expand('<cWORD>'))
@@ -445,9 +436,7 @@ endfunction
 function! s:MessagesBuffer_select_room(offset)
     python <<EOM
 # coding=utf-8
-import vim
-if lingr_vim.is_alive():
-    lingr_vim.select_room_by_offset(int(vim.eval("a:offset")))
+do_if_alive(lambda: lingr_vim.select_room_by_offset(int(vim.eval("a:offset"))))
 EOM
     call s:MessagesBuffer.scroll_to_end()
 endfunction
@@ -491,11 +480,11 @@ endfunction
 function! s:MembersBuffer_open()
     python <<EOM
 # coding=utf-8
-import vim
-if lingr_vim.is_alive():
+def _lingr_temp():
     lnum = vim.eval('line(".")')
     member_id = lingr_vim.get_member_id_by_lnum(int(lnum))
     vim.command('call lingr#open_url("http://lingr.com/{0}")'.format(member_id))
+do_if_alive(_lingr_temp)
 EOM
 endfunction
 
@@ -534,22 +523,22 @@ endfunction
 function! s:RoomsBuffer_select()
     python <<EOM
 # coding=utf-8
-import vim
-if lingr_vim.is_alive():
+def _lingr_temp():
     cursor = vim.current.window.cursor
     lingr_vim.select_room_by_lnum(cursor[0])
     vim.current.window.cursor = cursor
+do_if_alive(_lingr_temp)
 EOM
 endfunction
 
 function! s:RoomsBuffer_open()
     python <<EOM
 # coding=utf-8
-import vim
-if lingr_vim.is_alive():
+def _lingr_temp():
     lnum = vim.eval('line(".")')
     room_id = lingr_vim.get_room_id_by_lnum(int(lnum))
     vim.command('call lingr#open_url("http://lingr.com/room/{0}")'.format(room_id))
+do_if_alive(_lingr_temp)
 EOM
 endfunction
 " }}}
