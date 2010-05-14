@@ -99,7 +99,6 @@ def do_if_alive(func, show_error=False, *args, **keywords):
 EOM
 " }}}
 
-
 " Interface {{{
 function! lingr#launch(use_setting)
     " get username and password
@@ -279,6 +278,15 @@ do_if_alive(_lingr_temp)
 EOM
     return result
 endfunction
+
+function! lingr#quote_operator(motion_wiseness)
+    let lines = map(getline(line("'["), line("']")), '"> " . v:val')
+
+    call s:SayBuffer.initialize()
+    call setline(1, lines)
+    call feedkeys('Go', 'n')
+endfunction
+
 " }}}
 
 " object BufferBase {{{
@@ -362,7 +370,7 @@ endfunction
 function! s:MessagesBuffer.setup()
     " option
     let &filetype = s:MESSAGES_FILETYPE
-    setlocal statusline=%f\ (%{lingr#current_room()})\ [%{lingr#status()}]
+    setlocal statusline=%f\ (%{lingr#current_room()})\ [%{lingr#status()}]%=%l/%L(%P)
 
     " autocmd
     autocmd WinEnter <buffer> call s:MessagesBuffer.scroll_to_end()
@@ -381,6 +389,12 @@ function! s:MessagesBuffer.setup()
     nnoremap <silent> <buffer> <Plug>(lingr-messages-show-say-buffer)
                 \ :<C-u>call <SID>MessagesBuffer_show_say_buffer()<CR>
 
+    nnoremap <script> <silent> <Plug>(lingr-messages-quote)
+                \ :<C-u>let &operatorfunc='lingr#quote_operator'<CR>g@
+    vnoremap <script> <silent> <Plug>(lingr-messages-quote)
+                \ :<C-u>let &operatorfunc='lingr#quote_operator'<CR>gvg@
+    onoremap <script> <silent> <Plug>(lingr-messages-quote) g@
+
     nmap <silent> <buffer> <CR> <Plug>(lingr-messages-messages-buffer-action)
     nmap <silent> <buffer> <LeftRelease> <Plug>(lingr-messages-messages-buffer-action)
     nmap <silent> <buffer> } <Plug>(lingr-messages-search-delimiter-forward)
@@ -388,6 +402,7 @@ function! s:MessagesBuffer.setup()
     nmap <silent> <buffer> <C-n> <Plug>(lingr-messages-select-next-room)
     nmap <silent> <buffer> <C-p> <Plug>(lingr-messages-select-prev-room)
     nmap <silent> <buffer> s <Plug>(lingr-messages-show-say-buffer)
+    map <silent> <buffer> Q <Plug>(lingr-messages-quote)
 endfunction
 
 function! s:MessagesBuffer.scroll_to_end()
