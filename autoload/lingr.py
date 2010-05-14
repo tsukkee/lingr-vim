@@ -209,6 +209,16 @@ class Connection(object):
         res = self._post("session/create", {"user": self.user, "password": self.password})
         self._debug("session/create response: " + str(res))
 
+        return self._init_session(res)
+
+    def verify_session(self, session_id):
+        self._debug("requesting verify: " + session_id)
+        res = self._post("verify", {"session": session_id})
+        self._debug("verify response: " + str(res))
+
+        return self._init_session(ref)
+
+    def _init_session(self, ref):
         self.session = res["session"]
         self.nickname = res["nickname"]
         self.public_id = res["public_id"]
