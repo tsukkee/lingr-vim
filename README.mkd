@@ -44,6 +44,8 @@ Of couse, your machine needs to be connected to web.
 * Other commands in lingr-messages
   * Press `<C-n>` or `<C-p>` to go around rooms
   * Press `{` or `}` to junp to delimiters that are inserted between past logs
+  * Use `Q{motion}` to quote messages in Normal Mode
+  * Press `Q` to quote messages in Visual Mode
 * Mouse operations are also supported
   * Left click works as same as `<Enter>`
   * Left double click works as same as `o`
@@ -65,6 +67,8 @@ Of couse, your machine needs to be connected to web.
 * lingr-messagesのその他のコマンド
   * `<C-n>`と`<C-p>`で部屋を巡回できます
   * `{`と`}`で過去ログ取得時に挿入される区切りにジャンプできます
+  * ノーマルモードでは`Q{motion}`でメッセージを引用できます
+  * ビジュアルモードでは`Q`でメッセージを引用できます
 * マウスでも一応操作できます
   * `<Enter>`でできることは左クリックでもできます
   * `o`でできることは左ダブルクリックでもできます
@@ -95,6 +99,24 @@ Of couse, your machine needs to be connected to web.
     <code>%s</code> is replaced to specified URL</dd>
 </dl>
 
+## Custom event
+<dl>
+    <dt><code>plugin-lingr-connected</code></dt>
+    <dd>Dispatched when Lingr-Vim connects to Lingr</dd>
+
+    <dt><code>plugin-lingr-message</code></dt>
+    <dd>Dispatched when Lingr-Vim receives new message</dd>
+
+    <dt><code>plugin-lingr-presence</code></dt>
+    <dd>Dispatched when someone changes her/his presence</dd>
+
+    <dt><code>plugin-lingr-unread</code></dt>
+    <dd>Dispatched when unread count is changed</dd>
+
+    <dt><code>plugin-lingr-connected</code></dt>
+    <dd>Dispatched when some errors occur</dd>
+</dl>
+
 ## API
 <dl>
     <dt><code>lingr#launch(use_setting)</code></dt>
@@ -111,6 +133,34 @@ Of couse, your machine needs to be connected to web.
 
     <dt><code>lingr#unread_count()</code></dt>
     <dd>Return count of unread messages or -1 if Lingr-Vim has not been launched. You may want to use this in <code>'statusline'</code> or <code>'tabline'</code></dd>
+
+    <dt><code>lingr#status()</code></dt>
+    <dd>Return current status of Lingr-Vim: connected/offline/waiting for reconnect...</dd>
+
+    <dt><code>lingr#current_room()</code></dt>
+    <dd>Return the name of current room</dd>
+
+    <dt><code>lingr#member_count()</code></dt>
+    <dd>Return the number of members in the current room</dd>
+
+    <dt><code>lingr#online_member_count()</code></dt>
+    <dd>Return the number of online members in the current room</dd>
+
+    <dt><code>lingr#offline_member_count()</code></dt>
+    <dd>Return the number of offline members in the current room</dd>
+
+    <dt><code>lingr#get_last_message()</code></dt>
+    <dd>Return the dictionary of last message<br>
+        The dictionary member is `nickname` and `text`<br>
+        You may want to use this with `plugin-lingr-message` event</dd>
+
+    <dt><code>lingr#get_last_member()</code></dt>
+    <dd>Return the dictionary of last member who changes her/his presence<br>
+        The dictionary member is `name`, `username` and `presence`<br>
+        You may want to use this with `plugin-lingr-member` event</dd>
+
+    <dt><code>lingr#quote_operator(motion_wiseness)</code></dt>
+    <dd>This is the function for quote operator (default is `Q`)</dd>
 </dl>
 
 ## Licence
