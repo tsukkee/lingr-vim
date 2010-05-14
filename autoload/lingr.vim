@@ -197,7 +197,7 @@ function! lingr#open_url(url)
         echo "open url:" a:url . "..."
         sleep 1m
         " Do we need Vim 7.2 or higher to use second argument of shellescape()?
-        execute 'silent !' printf(g:lingr_vim_command_to_open_url, shellescape(a:url, 'shell'))
+        execute 'silent !' printf(g:lingr_vim_command_to_open_url, shellescape(a:url, 1))
         redraw!
         echo "open url:" a:url . "... done!"
     else

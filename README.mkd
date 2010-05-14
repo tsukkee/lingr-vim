@@ -166,7 +166,7 @@ Of couse, your machine needs to be connected to web.
 ## Example
 ### Using Growl on Mac OS X
 <pre><code>function! s:growl(title, message)
-    execute printf('silent !growlnotify -t "%s" -m "%s"', a:title, a:message)
+    execute printf('silent !growlnotify -t "%s" -m "%s"', shellescape(a:title), shellescape(a:message))
 endfunction
 
 augroup lingr-vim
