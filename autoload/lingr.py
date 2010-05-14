@@ -35,6 +35,7 @@ import urllib
 import time
 import logging
 import json
+import os
 
 class Member(object):
     def __init__(self, res):
@@ -139,6 +140,7 @@ class APIError(Exception):
 
 
 class Connection(object):
+    SESSION_FILE = os.path.expanduser('~/.lingr_session')
     DOMAIN = "lingr.com"
     DOMAIN_OBSERVE = "lingr.com:8080"
     API_PATH = "/api/"
@@ -168,7 +170,7 @@ class Connection(object):
     def start(self):
         while True:
             try:
-                self.create_session()
+                self.start_session()
                 self.get_rooms()
                 self.show_room(",".join(self.room_ids))
                 self.subscribe(",".join(self.room_ids))
@@ -202,7 +204,21 @@ class Connection(object):
 
     def destroy(self):
         self.is_alive = False
-        self.destroy_session()
+        # self.destroy_session()
+
+    def start_session(self):
+        if os.path.exists(Connection.SESSION_FILE):
+            session_id = open(Connection.SESSION_FILE, 'r').readline().strip()
+
+            try:
+                res = self.verify_session(session_id)
+            except APIError as e:
+                if e.code == 'invalid_session':
+                    self.create_session()
+                else:
+                    raise e
+        else:
+            self.create_session()
 
     def create_session(self):
         self._debug("requesting session/create: " + self.user)
@@ -212,13 +228,13 @@ class Connection(object):
         return self._init_session(res)
 
     def verify_session(self, session_id):
-        self._debug("requesting verify: " + session_id)
-        res = self._post("verify", {"session": session_id})
-        self._debug("verify response: " + str(res))
+        self._debug("requesting session/verify: " + session_id)
+        res = self._get("session/verify", {"session": session_id})
+        self._debug("verify session/response: " + str(res))
 
-        return self._init_session(ref)
+        return self._init_session(res)
 
-    def _init_session(self, ref):
+    def _init_session(self, res):
         self.session = res["session"]
         self.nickname = res["nickname"]
         self.public_id = res["public_id"]
@@ -227,6 +243,11 @@ class Connection(object):
             user = res["user"]
             self.name = user["name"]
             self.username = user["username"]
+
+        session_file = open(Connection.SESSION_FILE, 'w')
+        session_file.write(self.session)
+        session_file.close()
+
         return res
 
     def destroy_session(self):
