@@ -136,7 +136,7 @@ EOM
 
     augroup plugin-lingr-vim
         autocmd!
-        autocmd CursorHold * silent call s:BufferBase.rendering()
+        autocmd CursorHold * call s:BufferBase.rendering()
         autocmd VimLeavePre * silent call lingr#exit()
         autocmd User plugin-lingr-* silent echo 'do nothing'
     augroup END
@@ -312,7 +312,7 @@ def _lingr_temp():
         enc = vim.eval('&encoding')
         set('name', m.name.encode(enc))
         set('username', m.username.encode(enc))
-        set('is_online', int(m.is_online))
+        set('presence', int(m.presence))
 do_if_alive(_lingr_temp)
 EOM
     return result
@@ -613,7 +613,7 @@ function! s:SayBuffer.setup()
     setlocal nobuflisted
 
     " autocmd
-    autocmd InsertLeave <buffer> silent call s:SayBuffer.rendering()
+    autocmd InsertLeave <buffer> call s:SayBuffer.rendering()
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-say-say)
