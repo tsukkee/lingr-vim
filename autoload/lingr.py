@@ -144,7 +144,8 @@ class Connection(object):
     DOMAIN = "lingr.com"
     DOMAIN_OBSERVE = "lingr.com:8080"
     API_PATH = "/api/"
-    HEADERS = {"Content-type": "application/x-www-form-urlencoded"}
+    HEADERS = {"Content-type": "application/x-www-form-urlencoded",
+               "User-agent": "Lingr-Vim(http://github.com/tsukkee/lingr-vim)"}
 
     REQUEST_TIMEOUT = 100 # sec
     RETRY_INTERVAL = 60 # sec
