@@ -285,6 +285,39 @@ EOM
     return result
 endfunction
 
+function! lingr#get_last_message()
+    let result = {}
+    python <<EOM
+def _lingr_temp():
+    m = lingr_vim.last_message
+    if m:
+        def set(name, value):
+            vim.command('let result.{0} = "{1}"'.format(name, value))
+        enc = vim.eval('&encoding')
+        set('nickname', m.nickname.encode(enc))
+        set('text', m.text.encode(enc))
+do_if_alive(_lingr_temp)
+EOM
+    return result
+endfunction
+
+function! lingr#get_last_member()
+    let result = {}
+    python <<EOM
+def _lingr_temp():
+    m = lingr_vim.last_member
+    if m:
+        def set(name, value):
+            vim.command('let result.{0} = "{1}"'.format(name, value))
+        enc = vim.eval('&encoding')
+        set('name', m.name.encode(enc))
+        set('username', m.username.encode(enc))
+        set('is_online', int(m.is_online))
+do_if_alive(_lingr_temp)
+EOM
+    return result
+endfunction
+
 function! lingr#quote_operator(motion_wiseness)
     let lines = map(getline(line("'["), line("']")), '"> " . v:val')
 
@@ -292,7 +325,6 @@ function! lingr#quote_operator(motion_wiseness)
     call setline(1, lines)
     call feedkeys('Go', 'n')
 endfunction
-
 " }}}
 
 " object BufferBase {{{

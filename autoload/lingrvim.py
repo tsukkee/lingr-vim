@@ -75,7 +75,7 @@ def redraw_statusline():
     vim.command('let &ro=&ro')
 
 def doautocmd(event):
-    vim.command('doautocmd User plugin-lingr-')
+    vim.command('doautocmd User plugin-lingr-' + event)
 
 
 class LingrVim(object):
@@ -131,6 +131,10 @@ class LingrVim(object):
         # for threading
         self.render_queue = [] # for RenderOperation
         self.queue_lock = threading.Lock()
+
+        # for user event
+        self.last_message = None # lingr.Message
+        self.last_member =  None # lingr.Member
 
     def __del__(self):
         self.destroy()
@@ -217,12 +221,12 @@ class LingrVim(object):
         def join_hook(sender, room, member):
             if self.current_room_id == room.id:
                 self.push_operation(RenderOperation(RenderOperation.PRESENCE,
-                    {"is_join": True, "member": member}))
+                    {"member": member}))
 
         def leave_hook(sender, room, member):
             if self.current_room_id == room.id:
                 self.push_operation(RenderOperation(RenderOperation.PRESENCE,
-                    {"is_join": False, "member": member}))
+                    {"member": member}))
 
         self.lingr.connected_hooks.append(connected_hook)
         self.lingr.error_hooks.append(error_hook)
@@ -365,8 +369,8 @@ class LingrVim(object):
             for text in message.text.split("\n"):
                 self.messages_buffer.append(' ' + text.encode(VIM_ENCODING))
 
-    def _show_presence_message(self, is_join, member):
-        format = LingrVim.JOIN_MESSAGE if is_join\
+    def _show_presence_message(self, member):
+        format = LingrVim.JOIN_MESSAGE if member.presence\
             else LingrVim.LEAVE_MESSAGE
         self.messages_buffer.append(
             format.format(member.name.encode(VIM_ENCODING)))
@@ -404,12 +408,14 @@ class LingrVim(object):
             elif op.type == RenderOperation.MESSAGE:
                 self.show_message(op.params["message"])
                 self._auto_scroll()
+                self.last_message = op.params["message"]
                 doautocmd('message')
 
             elif op.type == RenderOperation.PRESENCE:
-                self.show_presence_message(op.params["is_join"], op.params["member"])
+                self.show_presence_message(op.params["member"])
                 self.render_members()
                 self._auto_scroll()
+                self.last_member = op.params["member"]
                 doautocmd('presence')
 
             elif op.type == RenderOperation.UNREAD:
