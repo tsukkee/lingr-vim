@@ -151,16 +151,16 @@ Of couse, your machine needs to be connected to web.
 
     <dt><code>lingr#get_last_message()</code></dt>
     <dd>Return the dictionary of last message<br>
-        The dictionary member is `nickname` and `text`<br>
-        You may want to use this with `plugin-lingr-message` event</dd>
+        The dictionary member is <code>nickname</code> and <code>text</code><br>
+        You may want to use this with <code>plugin-lingr-message</code> event</dd>
 
     <dt><code>lingr#get_last_member()</code></dt>
     <dd>Return the dictionary of last member who changes her/his presence<br>
-        The dictionary member is `name`, `username` and `presence`<br>
-        You may want to use this with `plugin-lingr-member` event</dd>
+        The dictionary member is <code>name</code>, <code>username</code> and <code>presence</code><br>
+        You may want to use this with <code>plugin-lingr-member</code> event</dd>
 
     <dt><code>lingr#quote_operator(motion_wiseness)</code></dt>
-    <dd>This is the function for quote operator (default is `Q`)</dd>
+    <dd>This is the function for quote operator (default is <code>Q</code>)</dd>
 </dl>
 
 ## Licence
