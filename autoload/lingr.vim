@@ -138,7 +138,7 @@ EOM
         autocmd!
         autocmd CursorHold * call s:BufferBase.rendering()
         autocmd VimLeavePre * silent call lingr#exit()
-        autocmd User plugin-lingr-* silent echo 'do nothing'
+        autocmd User plugin-lingr-* : " do nothing
     augroup END
 
     command! LingrExit call lingr#exit()

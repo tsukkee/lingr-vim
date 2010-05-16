@@ -184,7 +184,7 @@ class Connection(object):
                     self.observe()
 
             except APIError as e:
-                if e.code == "invalid_user_credentials":
+                if e.code == "invalid_user_credentials" or e.code == "rate_limited":
                     raise e
                 self._on_error(e)
                 if self.auto_reconnect and self.is_alive:
