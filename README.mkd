@@ -1,13 +1,15 @@
 # Lingr-Vim: Lingr client for Vim
 Now this plugin is *little unstable*. Please use this at your own risk.
 
-*注意．X11環境では使わないでください．Vimがクラッシュします！*
 今のところ *ちょっと不安定* なので，自己責任でご利用ください
+
+*注意．X11環境では使わないでください．Vimがクラッシュします！*
+
+*Be carefule. Don't use this plugin in X11 environment because it crashes Vim!*
 
 ## Requirement
 This plugin is tested with Vim 7.2, but maybe works with Vim 7.0 or 7.1.
 
-*Be carefule. Don't use this plugin in X11 environment because it crashes Vim!*
 This plugin needs +python (Python 2.6 only)
 
 ## Install
