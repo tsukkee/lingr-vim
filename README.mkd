@@ -167,28 +167,29 @@ Of couse, your machine needs to be connected to web.
     <dd>This is the function for quote operator (default is <code>Q</code>)</dd>
 </dl>
 
-## Example
+## Customize example
 ### Using Growl on Mac OS X
-*This example is not good one. Please be careful when you use this.*
 
 <pre><code>function! s:growl(title, message)
-    execute printf('silent !growlnotify -t "%s" -m "%s"', shellescape(a:title), shellescape(a:message))
+    execute printf('silent !growlnotify -t %s -m %s', shellescape(a:title, 1), shellescape(a:message, 1))
 endfunction
 
 augroup lingr-vim
     autocmd!
     autocmd User plugin-lingr-message
-    \   let s:mes = lingr#get_last_message()
-    \|  if !empty(s:mes)
-    \|      call s:growl(s:mes.nickname, s:mes.text)
+    \   let s:temp = lingr#get_last_message()
+    \|  if !empty(s:temp)
+    \|      call s:growl(s:temp.nickname, s:temp.text)
     \|  endif
+    \|  unlet s:temp
 
     autocmd User plugin-lingr-presence
-    \   let s:mem = lingr#get_last_member()
-    \|  if !empty(s:mem)
-    \|      call s:growl(s:mem.name, (s:mem.presence ? 'online' : 'offline'))
+    \   let s:temp = lingr#get_last_member()
+    \|  if !empty(s:temp)
+    \|      call s:growl(s:temp.name, (s:temp.presence ? 'online' : 'offline'))
     \|  endif
-augroup END</code</pre>
+    \|  unlet s:temp
+augroup END</code></pre>
 
 ## Licence
 ### The MIT License
