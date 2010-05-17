@@ -1,7 +1,7 @@
 # vim:set fileencoding=utf-8:
 # Lingr-Vim: Lingr client for Vim
-# Version:     0.4
-# Last Change: 14 May 2010
+# Version:     0.5
+# Last Change: 17 May 2010
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
