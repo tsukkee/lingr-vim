@@ -151,7 +151,8 @@ class LingrVim(object):
 
                 unread_count = self.unread_counts[id] if id in self.unread_counts else 0
 
-                # need to get more archives
+                # need to get more archives: temporary disable due to bug
+                """
                 if len(self.messages[id]) > 0 and self.messages[id][-1].id < room.backlog[0].id:
                     need_to_get_more = True
                     max_id = room.backlog[0].id
@@ -170,8 +171,9 @@ class LingrVim(object):
                                 unread_count += 1
                         max_id = append_messages[0].id
                         append_messages.insert(0, self._dummy_message())
-                        # time.sleep(LingrVim.GET_ARCHIVES_INTERVAL)
+                        time.sleep(LingrVim.GET_ARCHIVES_INTERVAL)
                     self.messages[id].extend(append_messages)
+                """
 
                 # merge backlog
                 for m in room.backlog:
