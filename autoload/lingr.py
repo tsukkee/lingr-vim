@@ -1,7 +1,7 @@
-# vim:set fileencoding=utf-8:
+# coding=utf-8
 # Lingr-Vim: Lingr client for Vim
-# Version:     0.5
-# Last Change: 17 May 2010
+# Version:     0.5.1
+# Last Change: 23 May 2010
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -163,6 +163,7 @@ class Connection(object):
         self.leave_hooks = []
 
         self.session = None
+        self.counter = None
         self.room_ids = []
         self.rooms = {}
 
@@ -310,7 +311,8 @@ class Connection(object):
         res = self._post("room/subscribe",
             {"session": self.session, "room": room_id, "reset": str(reset).lower()})
         self._debug("room/subscribe response: " + str(res))
-        self.counter = res["counter"]
+        if not self.counter:
+            self.counter = res["counter"]
         return res
 
     def unsubscribe(self, room_id):

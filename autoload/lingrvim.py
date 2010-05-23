@@ -1,7 +1,7 @@
-# vim:set fileencoding=utf-8:
+# coding=utf-8:
 # Lingr-Vim: Lingr client for Vim
-# Version:     0.5
-# Last Change: 17 May 2010
+# Version:     0.5.1
+# Last Change: 23 May 2010
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -86,8 +86,6 @@ class LingrVim(object):
 
     CONNECTED, OFFLINE, RETRYING = range(3)
 
-    GET_ARCHIVES_INTERVAL = 5 # sec
-
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
         if int(vim.eval('exists("g:lingr_vim_debug_log_file")')):
             echo_message("Lingr-Vim starts with debug mode")
@@ -146,40 +144,14 @@ class LingrVim(object):
         def connected_hook(sender):
             # get messages
             for id, room in sender.rooms.iteritems():
-                if not id in self.messages:
-                    self.messages[id] = []
-
                 unread_count = self.unread_counts[id] if id in self.unread_counts else 0
 
-                # need to get more archives: temporary disable due to bug
-                """
-                if len(self.messages[id]) > 0 and self.messages[id][-1].id < room.backlog[0].id:
-                    need_to_get_more = True
-                    max_id = room.backlog[0].id
-                    append_messages = []
-                    while need_to_get_more:
-                        res = self.lingr.get_archives(id, max_id)
-                        archives = res['messages']
-                        archives.reverse()
-                        for m in archives:
-                            message = lingr.Message(m)
-                            if message.id == self.messages[id][-1].id:
-                                need_to_get_more = False
-                                break
-                            else:
-                                append_messages.insert(0, message)
-                                unread_count += 1
-                        max_id = append_messages[0].id
-                        append_messages.insert(0, self._dummy_message())
-                        time.sleep(LingrVim.GET_ARCHIVES_INTERVAL)
-                    self.messages[id].extend(append_messages)
-                """
-
-                # merge backlog
-                for m in room.backlog:
-                    if len(self.messages[id]) == 0 or self.messages[id][-1].id < m.id:
+                if not id in self.messages:
+                    self.messages[id] = []
+                    for m in room.backlog:
                         self.messages[id].append(m)
                         unread_count += 1
+
                 self.unread_counts[id] = unread_count
 
             # get rooms
