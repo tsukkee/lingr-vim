@@ -185,7 +185,7 @@ class Connection(object):
                     self.observe()
 
             except APIError as e:
-                if e.code == "invalid_user_credentials" or e.code == "rate_limited":
+                if e.code == "invalid_user_credentials":
                     raise e
                 self._on_error(e)
                 if self.auto_reconnect and self.is_alive:
@@ -369,11 +369,10 @@ class Connection(object):
 
     def _on_error(self, e):
         self._log_error(repr(e))
-        # if self.session:
-        #     self.destroy_session()
-        if self.is_alive:
-            for h in self.error_hooks:
-                h(self, e)
+
+        for h in self.error_hooks:
+            h(self, e)
+
         if self.auto_reconnect and self.is_alive:
             time.sleep(Connection.RETRY_INTERVAL)
 

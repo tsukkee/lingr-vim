@@ -319,7 +319,7 @@ EOM
 endfunction
 
 function! lingr#quote_operator(motion_wiseness)
-    let lines = map(getline(line("'["), line("']")), '"> " . v:val')
+    let lines = map(getline(line("'["), line("']")), '">" . v:val')
 
     call s:SayBuffer.initialize()
     call setline(1, lines)
