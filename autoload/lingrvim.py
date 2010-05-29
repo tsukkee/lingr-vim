@@ -1,7 +1,7 @@
 # coding=utf-8:
 # Lingr-Vim: Lingr client for Vim
-# Version:     0.5.1
-# Last Change: 23 May 2010
+# Version:     0.5.2
+# Last Change: 29 May 2010
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
