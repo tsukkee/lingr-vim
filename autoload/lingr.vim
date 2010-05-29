@@ -79,6 +79,7 @@ let s:path = expand("<sfile>:p:h")
 python <<EOM
 # coding=utf-8
 import sys
+import re
 import vim
 if not vim.eval('s:path') in sys.path:
     # append the path to load lingr_vim.py and lingr.py
@@ -292,7 +293,7 @@ def _lingr_temp():
     m = lingr_vim.last_message
     if m:
         def set(name, value):
-            vim.command('let result.{0} = "{1}"'.format(name, value))
+            vim.command("let result.{0} = '{1}'".format(name, re.sub("'", "''", value)))
         enc = vim.eval('&encoding')
         set('nickname', m.nickname.encode(enc))
         set('text', m.text.encode(enc))
@@ -308,7 +309,7 @@ def _lingr_temp():
     m = lingr_vim.last_member
     if m:
         def set(name, value):
-            vim.command('let result.{0} = "{1}"'.format(name, value))
+            vim.command("let result.{0} = '{1}'".format(name, re.sub("'", "''", value)))
         enc = vim.eval('&encoding')
         set('name', m.name.encode(enc))
         set('username', m.username.encode(enc))
