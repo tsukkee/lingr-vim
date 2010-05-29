@@ -293,10 +293,10 @@ def _lingr_temp():
     m = lingr_vim.last_message
     if m:
         def set(name, value):
-            vim.command("let result.{0} = '{1}'".format(name, re.sub("'", "''", value)))
+            vim.command("let result.{0} = '{1}'".format(name, value))
         enc = vim.eval('&encoding')
         set('nickname', m.nickname.encode(enc))
-        set('text', m.text.encode(enc))
+        set('text', re.sub("'", "''", m.text.encode(enc)))
 do_if_alive(_lingr_temp)
 EOM
     return result
@@ -309,7 +309,7 @@ def _lingr_temp():
     m = lingr_vim.last_member
     if m:
         def set(name, value):
-            vim.command("let result.{0} = '{1}'".format(name, re.sub("'", "''", value)))
+            vim.command("let result.{0} = '{1}'".format(name, value))
         enc = vim.eval('&encoding')
         set('name', m.name.encode(enc))
         set('username', m.username.encode(enc))
