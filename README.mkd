@@ -1,4 +1,4 @@
-# Lingr-Vim: Lingr client for Vim
+# lingr.vim: Lingr client for Vim
 Now this plugin is *little unstable*. Please use this at your own risk.
 
 今のところ *ちょっと不安定* なので，自己責任でご利用ください

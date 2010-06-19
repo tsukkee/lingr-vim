@@ -1,4 +1,4 @@
-" Lingr-Vim: Lingr client for Vim
+" lingr.vim: Lingr client for Vim
 " Version:     0.5.2
 " Last Change: 19 Jun 2010
 " Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
@@ -96,7 +96,7 @@ def do_if_alive(func, show_error=False, *args, **keywords):
     if lingr_vim and lingr_vim.is_alive():
         func(*args, **keywords)
     elif show_error:
-        lingrvim.echo_error("Lingr-Vim has not been initialized")
+        lingrvim.echo_error("lingr.vim has not been initialized")
 EOM
 " }}}
 
@@ -128,7 +128,7 @@ EOM
                 \ ? g:lingr_vim_password
                 \ : inputsecret('Lingr password? ')
 
-    echo "Launching Lingr-Vim..."
+    echo "Launching lingr.vim..."
     sleep 1m
     redraw
 
@@ -165,7 +165,7 @@ EOM
 endfunction
 
 function! lingr#exit()
-    echo "Exiting Lingr-Vim..."
+    echo "Exiting lingr.vim..."
     sleep 1m
     redraw
 
@@ -192,7 +192,7 @@ EOM
         autocmd! User
     augroup END
 
-    echo "Exiting Lingr-Vim... done!"
+    echo "Exiting lingr.vim... done!"
 endfunction
 
 function! lingr#say(text)

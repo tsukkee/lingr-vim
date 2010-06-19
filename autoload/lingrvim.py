@@ -1,7 +1,7 @@
 # coding=utf-8:
-# Lingr-Vim: Lingr client for Vim
+# lingr.vim: Lingr client for Vim
 # Version:     0.5.2
-# Last Change: 29 May 2010
+# Last Change: 19 Jun 2010
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -67,7 +67,7 @@ def echo_message(message):
 
 def echo_error(message):
     vim.command('echohl ErrorMsg')
-    echo_message("Lingr-Vim Error: {0}".format(message))
+    echo_message("lingr.vim Error: {0}".format(message))
     vim.command('echohl None')
 
 def redraw_statusline():
@@ -88,7 +88,7 @@ class LingrVim(object):
 
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
         if int(vim.eval('exists("g:lingr_vim_debug_log_file")')):
-            echo_message("Lingr-Vim starts with debug mode")
+            echo_message("lingr.vim starts with debug mode")
             logger = lingr._get_debug_logger(vim.eval('g:lingr_vim_debug_log_file'))
             self.lingr = lingr.Connection(user, password, True, logger=logger)
         else:
@@ -171,14 +171,14 @@ class LingrVim(object):
                 self.rooms_buffer.number]:
                 self.focused_buffer = vim.eval("bufname('')")
 
-            echo_message('Lingr-Vim has connected to Lingr')
+            echo_message('lingr.vim has connected to Lingr')
 
         def error_hook(sender, error):
             self.state = LingrVim.OFFLINE
             echo_error(str(error))
             if sender.auto_reconnect:
                 self.state = LingrVim.RETRYING
-                echo_message('Lingr-Vim will try re-connect {0} seconds later'\
+                echo_message('lingr.vim will try re-connect {0} seconds later'\
                     .format(lingr.Connection.RETRY_INTERVAL))
 
             self.push_operation(RenderOperation(RenderOperation.ERROR))
