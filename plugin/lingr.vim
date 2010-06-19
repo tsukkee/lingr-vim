@@ -1,6 +1,6 @@
 " Lingr-Vim: Lingr client for Vim
 " Version:     0.5.2
-" Last Change: 29 May 2010
+" Last Change: 19 Jun 2010
 " Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 " Licence:     The MIT License {{{
 "     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -38,24 +38,6 @@ endif
 " check +python
 if !has('python')
     echoerr 'This plugin needs +python (Python 2.6)'
-    finish
-endif
-
-" check python version
-python <<EOM
-# coding=utf-8
-import vim
-import sys
-def _lingr_temp():
-    major, minor, micro, releaselevel, serial = sys.version_info
-    if major != 2 or minor != 6:
-        vim.command('let s:invalid_version = 1')
-    else:
-        vim.command('let s:invalid_version = 0')
-_lingr_temp()
-EOM
-if s:invalid_version
-    echoerr 'This plugin needs python 2.6'
     finish
 endif
 

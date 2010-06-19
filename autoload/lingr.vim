@@ -1,6 +1,6 @@
 " Lingr-Vim: Lingr client for Vim
 " Version:     0.5.2
-" Last Change: 29 May 2010
+" Last Change: 19 Jun 2010
 " Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 " Licence:     The MIT License {{{
 "     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -102,6 +102,23 @@ EOM
 
 " Interface {{{
 function! lingr#launch(use_setting)
+    " check python version
+    let invalid_version = 0
+    python <<EOM
+# coding=utf-8
+import vim
+import sys
+def _lingr_temp():
+    major, minor, micro, releaselevel, serial = sys.version_info
+    if major != 2 or minor != 6:
+        vim.command('let invalid_version = 1')
+_lingr_temp()
+EOM
+    if invalid_version
+        echoerr 'This plugin needs python 2.6'
+        return
+    endif
+
     " get username and password
     let user = a:use_setting && exists('g:lingr_vim_user')
                 \ ? g:lingr_vim_user
