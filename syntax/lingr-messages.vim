@@ -1,5 +1,5 @@
 " lingr.vim: Lingr client for Vim
-" Version:     0.5.2
+" Version:     0.6.0
 " Last Change: 19 Jun 2010
 " Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 " Licence:     The MIT License {{{
