@@ -1,0 +1,159 @@
+*lingr.txt*		lingr.vim: Lingrクライアント for Vim
+
+Version:     0.6.0
+Last Change: 2010 Jun 21
+Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
+Licence:     The MIT License {{{
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    THE SOFTWARE.
+
+    日本語参考訳
+    http://sourceforge.jp/projects/opensource/wiki/licenses%2FMIT_license
+}}}
+
+CONTENTS					*lingr-contents*
+
+Introduction		|lingr-introduction|
+Install			|lingr-install|
+Interface		|lingr-interface|
+    Commands		    |lingr-commands|
+    Functions		    |lingr-functions|
+    Key Mappings	    |lingr-key-mappings|
+    Autocmd		    |lingr-autocmd|
+Customizing		|lingr-customizing|
+Changelog		|lingr-changelog|
+
+==============================================================================
+INTRODUCTION					*lingr-introduction*
+Vim上でLingrを見ることができる．
+今のところちょっと不安定なので，自己責任で利用すること
+Note: Vimがクラッシュするので，X11環境では使わないこと．
+
+==============================================================================
+INSTALL						*lingr-install*
+Vim 7.2でテストしています（おそらく7.0以上で動作すると思います）．
+|+python|が必要です（Python 2.6）
+
+==============================================================================
+INTERFACE					*lingr-interface*
+
+------------------------------------------------------------------------------
+COMMANDS					*lingr-commands*
+
+:LingrLaunch					*:LingrLaunch*
+		lingr.vimを起動する．|g:lingr_vim_user|と
+		|g:lingr_vim_password|が定義されているとそれらを使って
+		ログインする．定義されていない場合は，インタラクティブに
+		ユーザ名とパスワードを入力する．
+
+:LingrLaunch!					*:LingrLaunch!*
+		|:LingrLaunch|と同じだが，|g:lingr_vim_user|と
+		|g:lingr_vim_password|を無視する
+
+:LingrExit					*:LingrExit*
+		lingr.vimを終了する
+
+------------------------------------------------------------------------------
+FUNCTIONS					*lingr-functions*
+
+lingr#launch({use-setting})			*lingr#launch()*
+		|:LingrLaunch|の関数版．
+
+lingr#exit()					*lingr#exit()*
+		|:LingrExit|の関数版．
+
+lingr#open_url({url})				*lingr#open_url()*
+		{url}を|g:lingr_vim_command_to_open_url|で指定された
+		コマンドで開く．
+
+lingr#unread_count()				*lingr#unread_count()*
+		未読数の合計を返す．'statusine'や'tabline'で使うと便利．
+
+lingr#status()					*lingr#status()*
+		lingr.vimの状態を表す文字列を返す．以下の3種類がある．
+		- connected
+		- offline
+		- waiting for reconnect...
+
+lingr#current_room()				*lingr#current_room()*
+		現在表示している部屋の名前を返す．
+
+lingr#member_count()				*lingr#member_count()*
+		現在表示している部屋のメンバー数を返す．
+
+lingr#online_member_count()			*lingr#online_member_count()*
+		現在表示している部屋のオンラインであるメンバー数を返す．
+
+lingr#offline_member_count()			*lingr#offline_member_count()*
+		現在表示している部屋のオフラインであるメンバー数を返す．
+
+lingr#get_last_message()			*lingr#get_last_message()*
+
+lingr#get_last_member()				*lingr#get_last_member()*
+
+lingr#quote_operator({motion-wiseness})		*lingr#quote_operator()*
+
+
+
+------------------------------------------------------------------------------
+KEY MAPPINGS					*lingr-key-mappings*
+
+
+------------------------------------------------------------------------------
+AUTOCMD						*lingr-autocmd*
+
+
+==============================================================================
+CUSTOMIZING					*lingr-customizing*
+
+Mac OS XでGworlを利用する
+>
+    function! s:growl(title, message)
+	execute printf('silent !growlnotify -t %s -m %s',
+	\    shellescape(a:title, 1), shellescape(a:message, 1))
+    endfunction
+
+    augroup lingr-vim
+	autocmd!
+	autocmd User plugin-lingr-message
+	\   let s:temp = lingr#get_last_message()
+	\|  if !empty(s:temp)
+	\|      call s:growl(s:temp.nickname, s:temp.text)
+	\|  endif
+	\|  unlet s:temp
+
+	autocmd User plugin-lingr-presence
+	\   let s:temp = lingr#get_last_member()
+	\|  if !empty(s:temp)
+	\|      call s:growl(s:temp.name,
+	\|	    (s:temp.presence ? 'online' : 'offline'))
+	\|  endif
+	\|  unlet s:temp
+    augroup END
+
+==============================================================================
+CHANGELOG					*lingr-changelog*
+X.X.X	2010-XX-XX
+	- 10部屋以上表示するために|g:lingr_vim_additional_rooms|オプションを
+	  追加
+
+0.6.1	2010-06-22
+	- ドキュメント作成
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:noet:fen:fdl=0:fdm=marker:
