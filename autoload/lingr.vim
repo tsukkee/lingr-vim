@@ -364,8 +364,8 @@ function! s:BufferBase.setup_base()
     setlocal bufhidden=hide
     setlocal foldmethod=manual
     setlocal foldcolumn=0
-    setlocal winfixwidth
-    setlocal winfixheight
+    " setlocal winfixwidth
+    " setlocal winfixheight
 
     " autocmd
     autocmd! * <buffer>
@@ -534,6 +534,8 @@ function! s:MembersBuffer.setup()
     " option
     let &filetype = s:MEMBERS_FILETYPE
     setlocal statusline=%f\ (%{lingr#online_member_count()}/%{lingr#member_count()})
+    setlocal winfixwidth
+    setlocal winfixheight
 
     " autocmd
     " nothing to do
@@ -573,6 +575,8 @@ function! s:RoomsBuffer.setup()
     " option
     let &filetype = s:ROOMS_FILETYPE
     setlocal statusline=%f
+    setlocal winfixwidth
+    setlocal winfixheight
 
     " autocmd
     " nothing to do
