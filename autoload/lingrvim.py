@@ -87,12 +87,14 @@ class LingrVim(object):
     CONNECTED, OFFLINE, RETRYING = range(3)
 
     def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
+        ids = vim.eval('g:lingr_vim_additional_rooms')
         if int(vim.eval('exists("g:lingr_vim_debug_log_file")')):
             echo_message("lingr.vim starts with debug mode")
             logger = lingr._get_debug_logger(vim.eval('g:lingr_vim_debug_log_file'))
-            self.lingr = lingr.Connection(user, password, True, logger=logger)
+            self.lingr = lingr.Connection(user, password, True,
+                    additional_rooms=ids, logger=logger)
         else:
-            self.lingr = lingr.Connection(user, password, True)
+            self.lingr = lingr.Connection(user, password, True, additional_rooms=ids)
 
         self.state = LingrVim.OFFLINE
 

@@ -150,10 +150,12 @@ class Connection(object):
     REQUEST_TIMEOUT = 100 # sec
     RETRY_INTERVAL = 60 # sec
 
-    def __init__(self, user, password, auto_reconnect = True, logger = None):
+    def __init__(self, user, password, auto_reconnect = True,
+            additional_rooms = [], logger = None):
         self.user = user
         self.password = password
         self.auto_reconnect = auto_reconnect
+        self.additional_rooms = additional_rooms
         self.logger = logger
 
         self.connected_hooks = []
@@ -174,6 +176,10 @@ class Connection(object):
             try:
                 self.start_session()
                 self.get_rooms()
+                for id in self.additional_rooms:
+                    if not id in self.room_ids:
+                        self.room_ids.append(id)
+
                 self.show_room(",".join(self.room_ids))
                 self.subscribe(",".join(self.room_ids))
 
@@ -185,7 +191,7 @@ class Connection(object):
                     self.observe()
 
             except APIError as e:
-                if e.code == "invalid_user_credentials":
+                if e.code == "invalid_user_credentials" or e.code == "not_found":
                     raise e
                 self._on_error(e)
                 if self.auto_reconnect and self.is_alive:
