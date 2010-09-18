@@ -108,7 +108,7 @@ import vim
 import sys
 def _lingr_temp():
     major, minor, micro, releaselevel, serial = sys.version_info
-    if major != 2 or minor != 6:
+    if major != 2 or minor < 6:
         vim.command('let invalid_version = 1')
 _lingr_temp()
 EOM
@@ -364,6 +364,7 @@ function! s:BufferBase.setup_base()
     setlocal bufhidden=hide
     setlocal foldmethod=manual
     setlocal foldcolumn=0
+    setlocal nomodeline
     " setlocal winfixwidth
     " setlocal winfixheight
 

@@ -128,7 +128,7 @@ CUSTOMIZING					*lingr-customizing*
 Mac OS XでGworlを利用する．
 >
     function! s:growl(title, message)
-	execute printf('silent !growlnotify -t %s -m %s',
+	execute printf('silent !growlnotify -t %s -m %s -H localhost',
 	\    shellescape(a:title, 1), shellescape(a:message, 1))
     endfunction
 
@@ -149,6 +149,7 @@ Mac OS XでGworlを利用する．
 	\|  endif
 	\|  unlet s:temp
     augroup END
+<
 
 ==============================================================================
 CHANGELOG					*lingr-changelog*
