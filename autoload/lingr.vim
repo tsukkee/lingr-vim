@@ -632,9 +632,11 @@ function! s:SayBuffer.setup()
     let &filetype = s:SAY_FILETYPE
     setlocal statusline=%f
     setlocal nobuflisted
+    setlocal buftype=acwrite
 
     " autocmd
     autocmd InsertLeave <buffer> call s:SayBuffer.rendering()
+    autocmd BufWriteCmd <buffer> call s:SayBuffer.say_bufwritecmd()
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-say-say)
@@ -648,6 +650,11 @@ function! s:SayBuffer.setup()
     " ex) autocmd FileType lingr-say imap <buffer> <CR> <Plug>(lingr-say-insert-mode-say)
     inoremap <buffer> <silent> <Plug>(lingr-say-insert-mode-say)
                 \ <Esc>:<C-u>call <SID>SayBuffer_say()<CR>i
+endfunction
+
+function! s:SayBuffer.say_bufwritecmd()
+    call s:SayBuffer_say()
+    setlocal nomodified
 endfunction
 
 function! s:SayBuffer_close()
