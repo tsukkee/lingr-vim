@@ -666,7 +666,7 @@ function! s:SayBuffer_say()
     if len(text) > 0
         call lingr#say(text)
     endif
-    normal! ggdG
+    %delete _
 endfunction
 " }}}
 
