@@ -341,6 +341,13 @@ function! lingr#quote_operator(motion_wiseness)
     call setline(1, lines)
     call feedkeys('Go', 'n')
 endfunction
+
+function! lingr#mark_as_read_current_room()
+    python <<EOM
+# coding=utf-8
+lingr_vim.set_focus(vim.eval("bufname('')"))
+EOM
+endfunction
 " }}}
 
 " object BufferBase {{{
