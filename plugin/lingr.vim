@@ -1,6 +1,6 @@
 " lingr.vim: Lingr client for Vim
 " Version:     0.6.0
-" Last Change: 19 Jun 2010
+" Last Change: 14 Oct 2010
 " Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 " Licence:     The MIT License {{{
 "     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,18 +28,17 @@ endif
 
 " check Vim version
 if !exists('v:version') || v:version < 700
-    echoerr 'This plugin needs Vim 7.0 or higher (7.2 is recommended)'
+    echoerr 'This plugin needs Vim 7.0 or higher (7.2 or higher is recommended)'
     finish
 endif
 
 " check +python
 if !has('python')
-    echoerr 'This plugin needs +python (Python 2.6)'
+    echoerr 'This plugin needs +python (Python 2.6 or 2.7)'
     finish
 endif
 
 " define commands
 command! -bang LingrLaunch call lingr#launch(<bang>1)
-
 
 let g:loaded_lingr_vim = 1
