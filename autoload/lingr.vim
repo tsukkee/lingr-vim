@@ -432,7 +432,7 @@ endfunction
 
 function! s:MessagesBuffer.setup()
     " option
-    let &l:filetype = s:MESSAGES_FILETYPE
+    let &filetype = s:MESSAGES_FILETYPE
     setlocal statusline=%f\ (%{lingr#current_room()})\ [%{lingr#status()}]%=%l/%L(%P)
 
     " autocmd
@@ -541,7 +541,7 @@ endfunction
 
 function! s:MembersBuffer.setup()
     " option
-    let &l:filetype = s:MEMBERS_FILETYPE
+    let &filetype = s:MEMBERS_FILETYPE
     setlocal statusline=%f\ (%{lingr#online_member_count()}/%{lingr#member_count()})
     setlocal winfixwidth
     setlocal winfixheight
@@ -582,7 +582,7 @@ endfunction
 
 function! s:RoomsBuffer.setup()
     " option
-    let &l:filetype = s:ROOMS_FILETYPE
+    let &filetype = s:ROOMS_FILETYPE
     setlocal statusline=%f
     setlocal winfixwidth
     setlocal winfixheight
@@ -637,7 +637,7 @@ endfunction
 
 function! s:SayBuffer.setup()
     " option
-    let &l:filetype = s:SAY_FILETYPE
+    let &filetype = s:SAY_FILETYPE
     setlocal statusline=%f
     setlocal nobuflisted
     setlocal buftype=acwrite
