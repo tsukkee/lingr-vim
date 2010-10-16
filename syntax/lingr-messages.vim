@@ -27,12 +27,16 @@ if exists('b:current_syntax')
 endif
 
 syntax match lingrMessagesGetArchives /\%1l.*/
-syntax match lingrMessagesHeader /^[^ ].*(.*):$/
+syntax match lingrMessagesHeader /^[^ ].*(.*):\*\?$/
            \ contains=lingrMessagesMine,lingrMessagesMineMarker,
            \          lingrMessagesSpeaker,lingrMessagesTimestamp
-syntax match lingrMessagesMine /^.*\ze\*(/ contained
-syntax match lingrMessagesMineMarker /\*\ze(/ contained
-syntax match lingrMessagesSpeaker /^.*\ze (/ contained
+syntax match lingrMessagesMine /^.*\ze (.*\*$/ contained
+if has('conceal')
+    syntax match lingrMessagesMineMarker /\*$/ contained conceal
+else
+    syntax match lingrMessagesMineMarker /\*$/ contained
+endif
+syntax match lingrMessagesSpeaker /^.*\ze (.*:$/ contained
 syntax match lingrMessagesTimestamp /(.*)/ contained
 syntax match lingrMessagesChangePresence /^-- .*/
 syntax match lingrMessagesError /^!!! .*/

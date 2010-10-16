@@ -1,7 +1,7 @@
 # coding=utf-8:
 # lingr.vim: Lingr client for Vim
 # Version:     0.6.0
-# Last Change: 19 Jun 2010
+# Last Change: 16 Oct 2010
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -79,7 +79,7 @@ class LingrVim(object):
     JOIN_MESSAGE         = "-- {0} is now online"
     LEAVE_MESSAGE        = "-- {0} is now offline"
     GET_ARCHIVES_MESSAGE = "[Read more from archives...]"
-    MESSAGE_HEADER       = "{0}({1}):"
+    MESSAGE_HEADER       = "{0} ({1}):{2}"
 
     CONNECTED, OFFLINE, RETRYING = range(3)
 
@@ -332,9 +332,9 @@ class LingrVim(object):
         else:
             if self.last_speaker_id != message.speaker_id:
                 name = message.nickname.encode(VIM_ENCODING)
-                mine = "*" if message.speaker_id == self.lingr.username else " "
+                mine = "*" if message.speaker_id == self.lingr.username else ""
                 t = time.strftime(vim.eval('g:lingr_vim_time_format'), message.timestamp)
-                text = LingrVim.MESSAGE_HEADER.format(name + mine, t)
+                text = LingrVim.MESSAGE_HEADER.format(name, t, mine)
                 self.messages_buffer.append(text)
                 self.last_speaker_id = message.speaker_id
 

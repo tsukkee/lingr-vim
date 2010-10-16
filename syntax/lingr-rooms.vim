@@ -1,6 +1,6 @@
 " lingr.vim: Lingr client for Vim
 " Version:     0.6.0
-" Last Change: 19 Jun 2010
+" Last Change: 16 Oct 2010
 " Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 " Licence:     The MIT License {{{
 "     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,7 +28,11 @@ endif
 
 syntax match lingrRoomsActive /[a-zA-Z0-9\-_.]*\ze .*\*$/
 syntax match lingrRoomsUnread /(\d\+)\ze\( \*\)\?$/
-syntax match lingrRoomsMarker /\*$/
+if has('conceal')
+    syntax match lingrRoomsMarker /\*$/ conceal
+else
+    syntax match lingrRoomsMarker /\*$/
+endif
 
 highlight default link lingrRoomsActive Title
 highlight default link lingrRoomsUnread ErrorMsg

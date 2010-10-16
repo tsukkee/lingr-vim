@@ -29,7 +29,11 @@ endif
 syntax match lingrMembersOnline /.*\ze +$/
 syntax match lingrMembersOffline /.*\ze -$/
 syntax match lingrMembersBot /.*\ze \*$/
-syntax match lingrMembersMarker /[-+*]$/
+if has('conceal')
+    syntax match lingrMembersMarker /[-+*]$/ conceal
+else
+    syntax match lingrMembersMarker /[-+*]$/
+endif
 
 highlight default link lingrMembersOnline String
 highlight default link lingrMembersOffline Comment
