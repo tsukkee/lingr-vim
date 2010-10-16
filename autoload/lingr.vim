@@ -647,6 +647,8 @@ function! s:SayBuffer.setup()
     setlocal buftype=acwrite
 
     " autocmd
+    autocmd BufEnter <buffer> setlocal buftype=acwrite
+    autocmd BufLeave <buffer> setlocal buftype=nofile
     autocmd InsertLeave <buffer> call s:SayBuffer.rendering()
     autocmd BufWriteCmd <buffer> call s:SayBuffer_say()
 
