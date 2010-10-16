@@ -436,7 +436,6 @@ endfunction
 
 function! s:MessagesBuffer.setup()
     " option
-    let &filetype = s:MESSAGES_FILETYPE
     setlocal statusline=%f\ (%{lingr#current_room()})\ [%{lingr#status()}]%=%l/%L(%P)
 
     " autocmd
@@ -470,6 +469,9 @@ function! s:MessagesBuffer.setup()
     nmap <silent> <buffer> <C-p> <Plug>(lingr-messages-select-prev-room)
     nmap <silent> <buffer> s <Plug>(lingr-messages-show-say-buffer)
     map <silent> <buffer> Q <Plug>(lingr-messages-quote)
+
+    " filetype
+    let &filetype = s:MESSAGES_FILETYPE
 endfunction
 
 function! s:MessagesBuffer.scroll_to_end()
@@ -545,7 +547,6 @@ endfunction
 
 function! s:MembersBuffer.setup()
     " option
-    let &filetype = s:MEMBERS_FILETYPE
     setlocal statusline=%f\ (%{lingr#online_member_count()}/%{lingr#member_count()})
     setlocal winfixwidth
     setlocal winfixheight
@@ -559,6 +560,9 @@ function! s:MembersBuffer.setup()
 
     nmap <buffer> <silent> o <Plug>(lingr-members-open-member)
     nmap <buffer> <silent> <2-LeftMouse> <Plug>(lingr-members-open-member)
+
+    " filetype
+    let &filetype = s:MEMBERS_FILETYPE
 endfunction
 
 function! s:MembersBuffer_open()
@@ -586,7 +590,6 @@ endfunction
 
 function! s:RoomsBuffer.setup()
     " option
-    let &filetype = s:ROOMS_FILETYPE
     setlocal statusline=%f
     setlocal winfixwidth
     setlocal winfixheight
@@ -604,6 +607,9 @@ function! s:RoomsBuffer.setup()
     nmap <buffer> <silent> <LeftRelease> <Plug>(lingr-rooms-select-room)
     nmap <buffer> <silent> o <Plug>(lingr-rooms-open-room)
     nmap <buffer> <silent> <2-LeftMouse> <Plug>(lingr-rooms-open-room)
+
+    " filetype
+    let &filetype = s:ROOMS_FILETYPE
 endfunction
 
 function! s:RoomsBuffer_select()
@@ -641,7 +647,6 @@ endfunction
 
 function! s:SayBuffer.setup()
     " option
-    let &filetype = s:SAY_FILETYPE
     setlocal statusline=%f
     setlocal nobuflisted
     setlocal buftype=acwrite
@@ -664,6 +669,9 @@ function! s:SayBuffer.setup()
     " ex) autocmd FileType lingr-say imap <buffer> <CR> <Plug>(lingr-say-insert-mode-say)
     inoremap <buffer> <silent> <Plug>(lingr-say-insert-mode-say)
                 \ <Esc>:<C-u>call <SID>SayBuffer_say()<CR>i
+
+    " filetype
+    let &filetype = s:SAY_FILETYPE
 endfunction
 
 function! s:SayBuffer_close()
