@@ -167,6 +167,7 @@ class Connection(object):
         self.rooms = {}
 
         self.is_alive = False
+        self._connection = None
 
     def start(self):
         while True:
@@ -208,6 +209,8 @@ class Connection(object):
                 break # finish
 
     def destroy(self):
+        if self._connection:
+            self._connection.close()
         self.is_alive = False
         # self.destroy_session()
 
@@ -386,10 +389,10 @@ class Connection(object):
         if params:
             url += '?' + urllib.urlencode(params)
 
-        connection = httplib.HTTPConnection(domain, timeout=Connection.REQUEST_TIMEOUT)
+        self._connection = httplib.HTTPConnection(domain, timeout=Connection.REQUEST_TIMEOUT)
         try:
-            connection.request("GET", url, headers=Connection.HEADERS)
-            res = json.loads(connection.getresponse().read())
+            self._connection.request("GET", url, headers=Connection.HEADERS)
+            res = json.loads(self._connection.getresponse().read())
         except socket.timeout as e:
             self._debug("get request timed out: " + url)
             if is_observe:
@@ -397,7 +400,8 @@ class Connection(object):
             else:
                 raise e
 
-        connection.close()
+        self._connection.close()
+        self._connection = None
 
         if res["status"] == "ok":
             return res
