@@ -186,8 +186,8 @@ class LingrVim(object):
             self.messages[room.id].append(message)
             self.push_operation(RenderOperation(RenderOperation.MESSAGE,
                 {"message": message, "room": room}))
-            if not int(vim.eval('g:lingr_vim_mark_as_read_automatically')) \
-                and (not self.focused_buffer or self.current_room_id != room.id):
+            if int(vim.eval('g:lingr_vim_count_unread_at_current_room')) \
+                or not self.focused_buffer or self.current_room_id != room.id:
                 self.unread_counts[room.id] += 1
                 self.push_operation(RenderOperation(RenderOperation.UNREAD))
 
@@ -293,7 +293,7 @@ class LingrVim(object):
             mark = " *" if id == self.current_room_id else ""
             unread = " (" + str(self.unread_counts[id]) + ")"\
                 if self.unread_counts[id] > 0 else ""
-            text = self.rooms[id].name.encode(VIM_ENCODING) + mark + unread
+            text = self.rooms[id].name.encode(VIM_ENCODING) + unread + mark
             self.rooms_buffer.append(text)
 
         del self.rooms_buffer[0]

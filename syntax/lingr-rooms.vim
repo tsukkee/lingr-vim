@@ -26,12 +26,12 @@ if exists('b:current_syntax')
     finish
 endif
 
-syntax match lingrRoomsActive /.*\ze \*$/
+syntax match lingrRoomsActive /[a-zA-Z0-9\-_.]*\ze .*\*$/
+syntax match lingrRoomsUnread /(\d\+)\ze\( \*\)\?$/
 syntax match lingrRoomsMarker /\*$/
-syntax match lingrRoomsUnread /(\d\+)$/
 
 highlight default link lingrRoomsActive Title
-highlight default link lingrRoomsMarker Ignore
 highlight default link lingrRoomsUnread ErrorMsg
+highlight default link lingrRoomsMarker Ignore
 
 let b:current_syntax = 'lingr-rooms'

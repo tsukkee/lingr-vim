@@ -49,7 +49,7 @@ call s:set_default('g:lingr_vim_update_time', 500)
 call s:set_default('g:lingr_vim_remain_height_to_auto_scroll', 5)
 call s:set_default('g:lingr_vim_time_format', '%c') " see C language strftime() reference
 call s:set_default('g:lingr_vim_additional_rooms', [])
-call s:set_default('g:lingr_vim_mark_as_read_automatically', 1)
+call s:set_default('g:lingr_vim_count_unread_at_current_room', 0)
 
 if !exists('g:lingr_vim_command_to_open_url')
     " Mac
@@ -644,7 +644,7 @@ function! s:SayBuffer.setup()
 
     " autocmd
     autocmd InsertLeave <buffer> call s:SayBuffer.rendering()
-    autocmd BufWriteCmd <buffer> call s:SayBuffer.say_bufwritecmd()
+    autocmd BufWriteCmd <buffer> call s:SayBuffer_say()
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-say-say)
@@ -660,11 +660,6 @@ function! s:SayBuffer.setup()
                 \ <Esc>:<C-u>call <SID>SayBuffer_say()<CR>i
 endfunction
 
-function! s:SayBuffer.say_bufwritecmd()
-    call s:SayBuffer_say()
-    setlocal nomodified
-endfunction
-
 function! s:SayBuffer_close()
     close
 endfunction
@@ -675,6 +670,7 @@ function! s:SayBuffer_say()
         call lingr#say(text)
     endif
     %delete _
+    setlocal nomodified
 endfunction
 " }}}
 
