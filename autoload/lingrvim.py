@@ -186,10 +186,8 @@ class LingrVim(object):
             self.messages[room.id].append(message)
             self.push_operation(RenderOperation(RenderOperation.MESSAGE,
                 {"message": message, "room": room}))
-            if sender.user != self.lingr.user \
-                    and (not int(vim.eval('g:lingr_vim_mark_as_read_automatically')) \
-                        or not self.focused_buffer \
-                        or self.current_room_id != room.id):
+            if not int(vim.eval('g:lingr_vim_mark_as_read_automatically')) \
+                and (not self.focused_buffer or self.current_room_id != room.id):
                 self.unread_counts[room.id] += 1
                 self.push_operation(RenderOperation(RenderOperation.UNREAD))
 
