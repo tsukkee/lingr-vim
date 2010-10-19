@@ -101,6 +101,12 @@ EOM
 
 " Interface {{{
 function! lingr#launch(use_setting)
+    " check +python
+    if !has('python')
+        echoerr 'This plugin needs +python (Python 2.6 or 2.7)'
+        finish
+    endif
+
     " check python version
     let invalid_version = 0
     python <<EOM

@@ -32,12 +32,6 @@ if !exists('v:version') || v:version < 700
     finish
 endif
 
-" check +python
-if !has('python')
-    echoerr 'This plugin needs +python (Python 2.6 or 2.7)'
-    finish
-endif
-
 " define commands
 command! -bang LingrLaunch call lingr#launch(<bang>1)
 
