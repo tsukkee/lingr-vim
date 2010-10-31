@@ -40,7 +40,7 @@ class Member(object):
         self.name = res["name"]
         self.icon_url = res["icon_url"]
         self.timestamp = res["timestamp"]
-        self.owner = res["owner"]
+        self.owner = res["is_owner"]
         self.presence = res["is_online"]
         self.pokeable = res["pokeable"]
 
