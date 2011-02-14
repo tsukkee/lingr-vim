@@ -1,7 +1,7 @@
 # coding=utf-8
 # lingr.vim: Lingr client for Vim
 # Version:     0.6.0
-# Last Change: 19 Jun 2010
+# Last Change: 14 Feb 2011
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -243,7 +243,6 @@ class Connection(object):
         self.session = res["session"]
         self.nickname = res["nickname"]
         self.public_id = res["public_id"]
-        self.presence = res["is_online"]
         if "user" in res:
             user = res["user"]
             self.name = user["name"]
