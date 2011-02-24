@@ -264,11 +264,22 @@ class LingrVim(object):
         if self.current_room_id:
             try:
                 return self.lingr.say(self.current_room_id, text.decode(VIM_ENCODING))
+            except lingr.APIError as e:
+                echo_error(str(e))
+                return False
             except socket.timeout as e:
                 echo_error('The request was timed out: Say "{0}".'.format(text))
                 return False
         else:
             return False
+
+    # don't work
+    def delete_message(self, lnum):
+        if self.current_room_id and lnum in self.line2message:
+            m = self.line2message[lnum]
+            if int(vim.eval('confirm("Delete this message?", "&Yes\n&No", 2)')) == 1:
+                self.lingr.delete_message(self.current_room_id, m)
+                self.messages[self.current_room_id].remove(m)
 
     def unread_count(self):
         return reduce(lambda a, b: a + b, self.unread_counts.values())

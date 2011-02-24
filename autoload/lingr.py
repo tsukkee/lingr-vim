@@ -339,6 +339,17 @@ class Connection(object):
         self._debug("room/say response: " + str(res))
         return res
 
+    # don't work
+    def delete_message(self, room_id, message):
+        self._debug("requesting room/" + room_id + "/delete_message/" + message.id)
+        try:
+            res = self._post("room/" + room_id + "/delete_message/" + message.id, {})
+        except ValueError: # response is not JSON
+            pass
+        self._debug("room/" + room_id + "/delete_message/" + message.id + " response: " + str(res))
+
+        return res
+
     def favorite_add(self, message):
         self._debug("requesting favorite/add: " + message.id)
         res = self._get("favorite/add",
