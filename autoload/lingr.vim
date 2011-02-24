@@ -1,6 +1,6 @@
 " lingr.vim: Lingr client for Vim
 " Version:     0.6.0
-" Last Change: 06 Dec 2010
+" Last Change: 24 Feb 2011
 " Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 "
 "
@@ -26,16 +26,21 @@
 " }}}
 
 " Constants {{{
-let s:MESSAGES_BUFNAME   = 'lingr-messages'
-let s:MESSAGES_FILETYPE  = 'lingr-messages'
-let s:ROOMS_BUFNAME      = 'lingr-rooms'
-let s:ROOMS_FILETYPE     = 'lingr-rooms'
-let s:MEMBERS_BUFNAME    = 'lingr-members'
-let s:MEMBERS_FILETYPE   = 'lingr-members'
-let s:SAY_BUFNAME        = 'lingr-say'
-let s:SAY_FILETYPE       = 'lingr-say'
-let s:URL_PATTERN        = '^https\?://[^ ]*'
-let s:ARCHIVES_DELIMITER = '--------------------'
+function! s:define(name, value)
+    let s:{a:name} = a:value
+    lockvar s:{a:name}
+endfunction
+
+call s:define('MESSAGES_BUFNAME',   'lingr-messages')
+call s:define('MESSAGES_FILETYPE',  'lingr-messages')
+call s:define('ROOMS_BUFNAME',      'lingr-rooms')
+call s:define('ROOMS_FILETYPE',     'lingr-rooms')
+call s:define('MEMBERS_BUFNAME',    'lingr-members')
+call s:define('MEMBERS_FILETYPE',   'lingr-members')
+call s:define('SAY_BUFNAME',        'lingr-say')
+call s:define('SAY_FILETYPE',       'lingr-say')
+call s:define('URL_PATTERN',        '^https\?://[^ ]*')
+call s:define('ARCHIVES_DELIMITER', '--------------------')
 " }}}
 
 " Settings {{{
@@ -45,14 +50,15 @@ function! s:set_default(variable_name, default)
     endif
 endfunction
 
-call s:set_default('g:lingr_vim_sidebar_width', 25)
-call s:set_default('g:lingr_vim_rooms_buffer_height', 10)
-call s:set_default('g:lingr_vim_say_buffer_height', 3)
-call s:set_default('g:lingr_vim_update_time', 500)
-call s:set_default('g:lingr_vim_remain_height_to_auto_scroll', 5)
-call s:set_default('g:lingr_vim_time_format', '%c') " see C language strftime() reference
-call s:set_default('g:lingr_vim_additional_rooms', [])
-call s:set_default('g:lingr_vim_count_unread_at_current_room', 0)
+call s:set_default('g:lingr_vim_api_version',                   1)
+call s:set_default('g:lingr_vim_sidebar_width',                 25)
+call s:set_default('g:lingr_vim_rooms_buffer_height',           10)
+call s:set_default('g:lingr_vim_say_buffer_height',             3)
+call s:set_default('g:lingr_vim_update_time',                   500)
+call s:set_default('g:lingr_vim_remain_height_to_auto_scroll',  5)
+call s:set_default('g:lingr_vim_time_format',                   '%c') " see C language strftime() reference
+call s:set_default('g:lingr_vim_additional_rooms',              [])
+call s:set_default('g:lingr_vim_count_unread_at_current_room',  0)
 
 if !exists('g:lingr_vim_command_to_open_url')
     " Mac
@@ -153,6 +159,7 @@ if lingr_vim:
 lingr_vim = lingrvim.LingrVim(
     vim.eval('user'),
     vim.eval('password'),
+    int(vim.eval('g:lingr_vim_api_version')),
     int(vim.eval('s:MessagesBuffer.bufnr')),
     int(vim.eval('s:MembersBuffer.bufnr')),
     int(vim.eval('s:RoomsBuffer.bufnr')))
@@ -463,6 +470,8 @@ function! s:MessagesBuffer.setup()
                 \ :<C-u>call <SID>MessagesBuffer_select_room(- v:count1)<CR>
     nnoremap <silent> <buffer> <Plug>(lingr-messages-show-say-buffer)
                 \ :<C-u>call <SID>MessagesBuffer_show_say_buffer()<CR>
+    nnoremap <silent> <buffer> <Plug>(lingr-messages-toggle-favorite)
+                \ :<C-u>call <SID>MessagesBuffer_toggle_favorite()<CR>
 
     nnoremap <script> <silent> <Plug>(lingr-messages-quote)
                 \ :<C-u>let &operatorfunc='lingr#quote_operator'<CR>g@
@@ -477,6 +486,7 @@ function! s:MessagesBuffer.setup()
     nmap <silent> <buffer> <C-n> <Plug>(lingr-messages-select-next-room)
     nmap <silent> <buffer> <C-p> <Plug>(lingr-messages-select-prev-room)
     nmap <silent> <buffer> s <Plug>(lingr-messages-show-say-buffer)
+    nmap <silent> <buffer> f <Plug>(lingr-messages-toggle-favorite)
     map <silent> <buffer> Q <Plug>(lingr-messages-quote)
 
     " filetype
@@ -540,6 +550,17 @@ function! s:MessagesBuffer_show_say_buffer()
     python <<EOM
 # coding=utf-8
 lingr_vim.set_focus(vim.eval("bufname('')"))
+EOM
+endfunction
+
+function! s:MessagesBuffer_toggle_favorite()
+    python <<EOM
+#coding=utf-8
+def _lingr_temp():
+    cursor = vim.current.window.cursor
+    lingr_vim.toggle_favorite(int(vim.eval('line(".")')))
+    vim.current.window.cursor = cursor
+do_if_alive(_lingr_temp)
 EOM
 endfunction
 " }}}

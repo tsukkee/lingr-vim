@@ -1,7 +1,7 @@
 # coding=utf-8:
 # lingr.vim: Lingr client for Vim
 # Version:     0.6.0
-# Last Change: 16 Oct 2010
+# Last Change: 24 Feb 2011
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -83,15 +83,16 @@ class LingrVim(object):
 
     CONNECTED, OFFLINE, RETRYING = range(3)
 
-    def __init__(self, user, password, messages_bufnr, members_bufnr, rooms_bufnr):
+    def __init__(self, user, password, version, messages_bufnr, members_bufnr, rooms_bufnr):
         ids = vim.eval('g:lingr_vim_additional_rooms')
+
         if int(vim.eval('exists("g:lingr_vim_debug_log_file")')):
             echo_message("lingr.vim starts with debug mode")
             logger = lingr._get_debug_logger(vim.eval('g:lingr_vim_debug_log_file'))
-            self.lingr = lingr.Connection(user, password, True,
+            self.lingr = lingr.Connection(user, password, version, True,
                     additional_rooms=ids, logger=logger)
         else:
-            self.lingr = lingr.Connection(user, password, True, additional_rooms=ids)
+            self.lingr = lingr.Connection(user, password, version, True, additional_rooms=ids)
 
         self.state = LingrVim.OFFLINE
 
@@ -124,6 +125,7 @@ class LingrVim(object):
         self.messages = {}        # {"room1": [message1, message2], "room2": [message1, ...
         self.unread_counts = {}   # {"room1": 2, "room2": 0, ...
         self.focused_buffer = None
+        self.line2message = {}    # {0: lingr.Message, 3: lingr.Message, ... , n: lingr.Message, ...
 
         # for threading
         self.render_queue = [] # for RenderOperation
@@ -263,14 +265,25 @@ class LingrVim(object):
             try:
                 return self.lingr.say(self.current_room_id, text.decode(VIM_ENCODING))
             except socket.timeout as e:
-                echo_error(
-                    'The request was timed out: Say "{0}".'.format(text))
+                echo_error('The request was timed out: Say "{0}".'.format(text))
                 return False
         else:
             return False
 
     def unread_count(self):
         return reduce(lambda a, b: a + b, self.unread_counts.values())
+
+    def toggle_favorite(self, lnum):
+        if not lnum in self.line2message:
+            return
+
+        m = self.line2message[lnum]
+        if m.favorite_id:
+            self.lingr.favorite_remove(m)
+        else:
+            self.lingr.favorite_add(m)
+
+        self.render_messages()
 
     def render_all(self):
         self.render_messages()
@@ -279,6 +292,7 @@ class LingrVim(object):
 
     def _render_messages(self):
         del self.messages_buffer[:]
+        self.line2message = {}
 
         self.messages_buffer[0] = LingrVim.GET_ARCHIVES_MESSAGE
         self.last_speaker_id = ""
@@ -326,6 +340,7 @@ class LingrVim(object):
         redraw_statusline()
 
     def _show_message(self, message):
+        current_pos = len(self.messages_buffer)
         if message.type == "dummy":
             self.last_speaker_id = ""
             self.messages_buffer.append(vim.eval('s:ARCHIVES_DELIMITER'))
@@ -336,11 +351,22 @@ class LingrVim(object):
                 t = time.strftime(vim.eval('g:lingr_vim_time_format'), message.timestamp)
                 text = LingrVim.MESSAGE_HEADER.format(name, t, mine)
                 self.messages_buffer.append(text)
+
                 self.last_speaker_id = message.speaker_id
+                current_pos += 1
+                self.line2message[current_pos] = message
 
             # vim.buffer.append() cannot receive newlines
+            is_first_line = True
             for text in message.text.split("\n"):
-                self.messages_buffer.append(' ' + text.encode(VIM_ENCODING))
+                space = ' '
+                if is_first_line and message.favorite_id:
+                    space = '*'
+                is_first_line = False
+
+                self.messages_buffer.append(space + text.encode(VIM_ENCODING))
+                current_pos += 1
+                self.line2message[current_pos] = message
 
     def _show_presence_message(self, member):
         format = LingrVim.JOIN_MESSAGE if member.presence\

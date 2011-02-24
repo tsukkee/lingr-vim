@@ -1,7 +1,7 @@
 # coding=utf-8
 # lingr.vim: Lingr client for Vim
 # Version:     0.6.0
-# Last Change: 14 Feb 2011
+# Last Change: 24 Feb 2011
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,6 +26,9 @@
 # This code is based on lingr.rb at below URL
 # http://github.com/psychs/lingr-irc/blob/master/lingr.rb
 
+# Lingr API
+# https://github.com/lingr/lingr/wiki/Lingr-API
+
 import httplib
 import socket
 import urllib
@@ -49,7 +52,7 @@ class Member(object):
             __name__, self.__class__.__name__, self, self.name.encode('utf-8'))
 
 
-class Bots(object):
+class Bot(object):
     def __init__(self, res):
         self.id = res["id"]
         self.name = res["name"]
@@ -81,7 +84,7 @@ class Room(object):
                     self.members.append(Member(m))
             if "bots" in res["roster"]:
                 for b in res["roster"]["bots"]:
-                    self.bots.append(Bots(b))
+                    self.bots.append(Bot(b))
 
     def add_member(self, member):
         self.members.append(member)
@@ -106,6 +109,10 @@ class Message(object):
         self.nickname = res["nickname"]
         self.speaker_id = res["speaker_id"]
         self.icon_url = res["icon_url"]
+        if "favorite_id" in res:
+            self.favorite_id = res["favorite_id"]
+        else:
+            self.favorite_id = None
         self.text = res["text"]
 
         # TODO: use GMT?
@@ -147,10 +154,11 @@ class Connection(object):
     REQUEST_TIMEOUT = 100 # sec
     RETRY_INTERVAL = 60 # sec
 
-    def __init__(self, user, password, auto_reconnect = True,
+    def __init__(self, user, password, version = 1, auto_reconnect = True,
             additional_rooms = [], logger = None):
         self.user = user
         self.password = password
+        self.version = version
         self.auto_reconnect = auto_reconnect
         self.additional_rooms = additional_rooms
         self.logger = logger
@@ -227,7 +235,8 @@ class Connection(object):
 
     def create_session(self):
         self._debug("requesting session/create: " + self.user)
-        res = self._post("session/create", {"user": self.user, "password": self.password})
+        res = self._post("session/create",
+            {"user": self.user, "password": self.password, "api_version": self.version})
         self._debug("session/create response: " + str(res))
 
         return self._init_session(res)
@@ -330,6 +339,24 @@ class Connection(object):
         self._debug("room/say response: " + str(res))
         return res
 
+    def favorite_add(self, message):
+        self._debug("requesting favorite/add: " + message.id)
+        res = self._get("favorite/add",
+            {"session": self.session, "message": message.id})
+        self._debug("favorite/add response: " + str(res))
+
+        message.favorite_id = True
+        return res
+
+    def favorite_remove(self, message):
+        self._debug("requesting favorite/remove: " + message.id)
+        res = self._get("favorite/remove",
+            {"session": self.session, "message": message.id})
+        self._debug("favorite/remove response: " + str(res))
+
+        message.favorite_id = None
+        return res
+
     def observe(self):
         self._debug("requesting event/observe: " + str(self.counter))
         res = self._get("event/observe", {"session": self.session, "counter": self.counter})
@@ -387,6 +414,7 @@ class Connection(object):
 
         connection = httplib.HTTPConnection(domain, timeout=Connection.REQUEST_TIMEOUT)
         try:
+            self._debug("GET requesting: " + url)
             connection.request("GET", url, headers=Connection.HEADERS)
             res = json.loads(connection.getresponse().read())
         except socket.timeout as e:
