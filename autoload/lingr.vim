@@ -1,10 +1,7 @@
 " lingr.vim: Lingr client for Vim
 " Version:     0.6.0
-" Last Change: 03 Mar 2011
+" Last Change: 05 Feb 2012
 " Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
-"
-"
-"
 " Licence:     The MIT License {{{
 "     Permission is hereby granted, free of charge, to any person obtaining a copy
 "     of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +24,10 @@
 
 " Constants {{{
 function! s:define(name, value)
-    let s:{a:name} = a:value
-    lockvar s:{a:name}
+    if !exists('s:' . a:name)
+        let s:{a:name} = a:value
+        lockvar s:{a:name}
+    endif
 endfunction
 
 call s:define('MESSAGES_BUFNAME',   'lingr-messages')
@@ -61,12 +60,12 @@ call s:set_default('g:lingr_vim_additional_rooms',              [])
 call s:set_default('g:lingr_vim_count_unread_at_current_room',  0)
 
 if !exists('g:lingr_vim_command_to_open_url')
-    " Mac
+    " Windows
     if has('win32') || ('win64')
         let g:lingr_vim_command_to_open_url = 'start rundll32 url.dll,FileProtocolHandler %s'
+    " Mac
     elseif has('mac') || has('macunix') || system('uname') =~? '^darwin'
         let g:lingr_vim_command_to_open_url = 'open %s'
-    " Windows
     " KDE
     elseif exists('$KDE_FULL_SESSION') && $KDE_FULL_SESSION ==# 'true'
         let g:lingr_vim_command_to_open_url = 'kfmclient exec %s &'
@@ -82,57 +81,44 @@ if !exists('g:lingr_vim_command_to_open_url')
 endif
 " }}}
 
-" Initialize {{{
-let s:path = expand("<sfile>:p:h")
-python <<EOM
-# coding=utf-8
-import sys
-import re
-import vim
-if not vim.eval('s:path') in sys.path:
-    # append the path to load lingr_vim.py and lingr.py
-    sys.path.append(vim.eval('s:path'))
-    lingr_vim = None
-import lingrvim
-EOM
-" }}}
-
 " Python Utilities {{{
 python <<EOM
 # coding=utf-8
 def do_if_alive(func, show_error=False, *args, **keywords):
-    if lingr_vim and lingr_vim.is_alive():
+    if 'lingr_vim' in globals() and lingr_vim and lingr_vim.is_alive():
         func(*args, **keywords)
     elif show_error:
         lingrvim.echo_error("lingr.vim has not been initialized")
+
+def lingr_is_alive():
+    return 'lingr_vim' in globals() and lingr_vim and lingr_vim.is_alive()
 EOM
+" }}}
+
+" Utility {{{
+function! s:show_message(str)
+    echo a:str
+    sleep 1m
+    redraw
+endfunction
+
+function! s:check_python()
+    let [major, minor, micro, releaselevel, serial] = pyutil#version()
+    return major == 2 && minor >= 6
+endfunction
+" }}}
+
+" Initialize {{{
+if !s:check_python()
+    echoerr 'This plugin needs +python (Python 2.6 or 2.7)'
+    finish
+endif
+
+call pyutil#append_path(expand("<sfile>:p:h"))
 " }}}
 
 " Interface {{{
 function! lingr#launch(use_setting)
-    " check +python
-    if !has('python')
-        echoerr 'This plugin needs +python (Python 2.6 or 2.7)'
-        finish
-    endif
-
-    " check python version
-    let invalid_version = 0
-    python <<EOM
-# coding=utf-8
-import vim
-import sys
-def _lingr_temp():
-    major, minor, micro, releaselevel, serial = sys.version_info
-    if major != 2 or minor < 6:
-        vim.command('let invalid_version = 1')
-_lingr_temp()
-EOM
-    if invalid_version
-        echoerr 'This plugin needs python 2.6'
-        return
-    endif
-
     " get username and password
     let user = a:use_setting && exists('g:lingr_vim_user')
                 \ ? g:lingr_vim_user
@@ -142,28 +128,32 @@ EOM
                 \ ? g:lingr_vim_password
                 \ : inputsecret('Lingr password? ')
 
-    echo "Launching lingr.vim..."
-    sleep 1m
-    redraw
+    call s:show_message("Launching lingr.vim...")
 
+    " create buffer
     wincmd o
     call s:MessagesBuffer.initialize()
     call s:MembersBuffer.initialize()
     call s:RoomsBuffer.initialize()
 
+    " initialize lingr_vim
     python <<EOM
 # coding=utf-8
-if lingr_vim:
+import vim
+import vimutil
+import lingrvim
+
+if 'lingr_vim' in globals() and lingr_vim:
     lingr_vim.destroy()
 
 lingr_vim = lingrvim.LingrVim(
     vim.eval('user'),
     vim.eval('password'),
-    int(vim.eval('g:lingr_vim_api_version')),
-    int(vim.eval('s:MessagesBuffer.bufnr')),
-    int(vim.eval('s:MembersBuffer.bufnr')),
-    int(vim.eval('s:RoomsBuffer.bufnr')))
-
+    vimutil.integer('g:lingr_vim_api_version'),
+    vimutil.integer('s:MessagesBuffer.bufnr'),
+    vimutil.integer('s:MembersBuffer.bufnr'),
+    vimutil.integer('s:RoomsBuffer.bufnr')
+    )
 lingr_vim.setup()
 EOM
 
@@ -180,9 +170,7 @@ EOM
 endfunction
 
 function! lingr#exit()
-    echo "Exiting lingr.vim..."
-    sleep 1m
-    redraw
+    call s:show_message("Exiting lingr.vim...")
 
     augroup plugin-lingr-vim
         autocmd! CursorHold,VimLeavePre
@@ -190,7 +178,7 @@ function! lingr#exit()
 
     python <<EOM
 # coding=utf-8
-if lingr_vim:
+if 'lingr_vim' in globals() and lingr_vim:
     lingr_vim.destroy()
     lingr_vim = None
 EOM
@@ -210,17 +198,28 @@ EOM
     echo "Exiting lingr.vim... done!"
 endfunction
 
-function! lingr#say(text)
-    python <<EOM
+python <<EOM
 # coding=utf-8
-def _lingr_temp():
-    if lingr_vim.say(vim.eval('a:text')):
-        pass
-    else:
-        lingrvim.echo_error("Failed to say: {0}".format(vim.eval('a:text')))
-do_if_alive(_lingr_temp, show_error=True)
+import vimutil
+
+@vimutil.vimfunc('lingr#say')
+@vimutil.do_if_available(lingr_is_alive, "lingr.vim is not initialized")
+def lingr_vim_say(args):
+    text = args[0]
+    if not lingr_vim.say(text):
+        vimutil.echo_error("Failed to say: {0}".format(text))
 EOM
-endfunction
+" function! lingr#say(text)
+"     python <<EOM
+" # coding=utf-8
+" def _lingr_temp():
+"     if lingr_vim.say(vim.eval('a:text')):
+"         pass
+"     else:
+"         lingrvim.echo_error("Failed to say: {0}".format(vim.eval('a:text')))
+" do_if_alive(_lingr_temp, show_error=True)
+" EOM
+" endfunction
 
 " Reference:
 " http://github.com/kana/config/blob/master/vim/dot.vim/autoload/wwwsearch.vim

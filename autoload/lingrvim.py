@@ -1,7 +1,7 @@
 # coding=utf-8:
 # lingr.vim: Lingr client for Vim
 # Version:     0.6.0
-# Last Change: 27 Feb 2011
+# Last Change: 05 Feb 2012
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -166,7 +166,7 @@ class LingrVim(object):
             self.state = LingrVim.CONNECTED
             self.push_operation(RenderOperation(RenderOperation.CONNECTED))
 
-            current_bufnr = int(vim.eval("bufnr('')"))
+            current_bufnr = vim.current.buffer.number
             if current_bufnr in [
                 self.messages_buffer.number,
                 self.members_buffer.number,
