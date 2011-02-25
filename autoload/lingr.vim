@@ -115,6 +115,15 @@ if !s:check_python()
 endif
 
 call pyutil#append_path(expand("<sfile>:p:h"))
+
+python<<EOM
+import vim
+import vimutil
+import lingrvim
+import re
+import socket
+import httplib
+EOM
 " }}}
 
 " Interface {{{
@@ -139,9 +148,6 @@ function! lingr#launch(use_setting)
     " initialize lingr_vim
     python <<EOM
 # coding=utf-8
-import vim
-import vimutil
-import lingrvim
 
 if 'lingr_vim' in globals() and lingr_vim:
     lingr_vim.destroy()
@@ -200,7 +206,6 @@ endfunction
 
 python <<EOM
 # coding=utf-8
-import vimutil
 
 @vimutil.vimfunc('lingr#say')
 @vimutil.do_if_available(lingr_is_alive, "lingr.vim is not initialized")
@@ -521,7 +526,6 @@ function! s:MessagesBuffer_get_archives()
     redraw
     python <<EOM
 # coding=utf-8
-import socket, httplib
 try:
     lingr_vim.get_archives()
 except (socket.error, httplib.HTTPException) as e:
