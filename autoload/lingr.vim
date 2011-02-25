@@ -206,6 +206,7 @@ endfunction
 
 python <<EOM
 # coding=utf-8
+
 @vimutil.vimfunc('lingr#say')
 @vimutil.do_if_available(lingr_is_alive, "lingr.vim is not initialized")
 def lingr_vim_say(args):
