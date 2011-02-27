@@ -65,7 +65,6 @@ class Bot(object):
         return "<{0}.{1} {2.name}>".format(
             __name__, self.__class__.__name__, self)
 
-
 class Room(object):
     def __init__(self, res):
         self.id = res["id"]

@@ -25,6 +25,7 @@
 
 import vim
 import lingr
+import vimutil
 import threading
 import socket
 import time
@@ -42,7 +43,7 @@ class LingrObserver(threading.Thread):
         try:
             self.lingr.start()
         except lingr.APIError as e:
-            echo_error(str(e))
+            vimutil.echo_error(str(e))
 
 
 class RenderOperation(object):
@@ -59,18 +60,6 @@ def make_modifiable(buffer, func):
         func(*args, **keywords)
         vim.command("call setbufvar({0.number}, '&modifiable', 0)".format(buffer))
     return do
-
-def echo_message(message):
-    vim.command('echomsg "{0}"'.format(message))
-
-def echo_error(message):
-    vim.command('echohl ErrorMsg')
-    echo_message("lingr.vim Error: {0}".format(message))
-    vim.command('echohl None')
-
-def redraw_statusline():
-    # force redraw statusline. see :help 'statusline'
-    vim.command('let &ro=&ro')
 
 def doautocmd(event):
     vim.command('doautocmd User plugin-lingr-' + event)
@@ -95,7 +84,7 @@ class LingrVim(object):
         ids = vim.eval('g:lingr_vim_additional_rooms')
 
         if int(vim.eval('exists("g:lingr_vim_debug_log_file")')):
-            echo_message("lingr.vim starts with debug mode")
+            vimutil.echo_message("lingr.vim starts with debug mode")
             logger = lingr._get_debug_logger(vim.eval('g:lingr_vim_debug_log_file'))
             self.lingr = lingr.Connection(user, password, version, True,
                     additional_rooms=ids, logger=logger)
@@ -180,14 +169,14 @@ class LingrVim(object):
                 self.rooms_buffer.number]:
                 self.focused_buffer = vim.eval("bufname('')")
 
-            echo_message('lingr.vim has connected to Lingr')
+            vimutil.echo_message('lingr.vim has connected to Lingr')
 
         def error_hook(sender, error):
             self.state = LingrVim.OFFLINE
-            echo_error(str(error))
+            vimutil.echo_error(str(error))
             if sender.auto_reconnect:
                 self.state = LingrVim.RETRYING
-                echo_message('lingr.vim will try re-connect {0} seconds later'\
+                vimutil.echo_message('lingr.vim will try re-connect {0} seconds later'\
                     .format(lingr.Connection.RETRY_INTERVAL))
 
             self.push_operation(RenderOperation(RenderOperation.ERROR))
@@ -273,10 +262,10 @@ class LingrVim(object):
             try:
                 return self.lingr.say(self.current_room_id, text.decode(VIM_ENCODING))
             except lingr.APIError as e:
-                echo_error(str(e))
+                vimutil.echo_error(str(e))
                 return False
             except socket.timeout as e:
-                echo_error('The request was timed out: Say "{0}".'.format(text))
+                vimutil.echo_error('The request was timed out: Say "{0}".'.format(text))
                 return False
         else:
             return False
@@ -317,7 +306,7 @@ class LingrVim(object):
         self.last_speaker_id = ""
         for m in self.messages[self.current_room_id]:
             self._show_message(m)
-        redraw_statusline()
+        vimutil.redraw_statusline()
 
     def _render_rooms(self):
         del self.rooms_buffer[:]
@@ -356,7 +345,7 @@ class LingrVim(object):
             self.current_members.append(b)
 
         del self.members_buffer[0]
-        redraw_statusline()
+        vimutil.redraw_statusline()
 
     def _show_message(self, message):
         current_pos = len(self.messages_buffer)
@@ -443,8 +432,8 @@ class LingrVim(object):
 
             elif op.type == RenderOperation.ERROR:
                 # vim.command('echoerr ""')
-                # echo_error("Error test")
-                redraw_statusline()
+                # vimutil.echo_error("Error test")
+                vimutil.redraw_statusline()
                 doautocmd('error')
 
         self.render_queue = []

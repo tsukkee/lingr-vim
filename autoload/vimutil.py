@@ -29,14 +29,23 @@ import vim
 VIM_ENCODING = vim.eval('&encoding')
 ENCODING_MODE = 'ignore'
 
+class VimUtilError(Exception):
+    def __init__(self, reason):
+        self.reason = reason
+
+    def __repr__(self):
+        "<{0}.{1} reason={2.reason}>".format(
+            __name__, self.__class__.__name__, self)
+
 # Decorator
 
 def buffer_modifiable(buffer):
     def _(func):
         def __(*args, **keywords):
             vim.command("call setbufvar({0.number}, '&modifiable', 1)".format(buffer))
-            func(*args, **keywords)
+            result = func(*args, **keywords)
             vim.command("call setbufvar({0.number}, '&modifiable', 0)".format(buffer))
+            return result
         return __
     return _
 
@@ -56,8 +65,9 @@ def do_if(condition, default = None, error_message = ''):
 def cursor_preseved(func):
     def _(*args, **keywords):
         cursor = vim.current.window.cursor
-        func(*args, **keywords)
+        result = func(*args, **keywords)
         vim.current.window.cursor = cursor
+        return result
     return _
 
 _functions_for_vim = {}
@@ -66,9 +76,13 @@ def vimfunc(name):
         _functions_for_vim[name] = func
 
         vim.command("""
-            function! {0}(...)
-                python vim.command('return "' +  {1}.escape(str({1}._functions_for_vim['{0}'](vim.eval('a:000')))) + '"')
-            endfunction
+function! {0}(...)
+python <<EOM
+# coding=utf-8
+
+vim.command('return ' + {1}.vimliteral({1}._functions_for_vim['{0}'](vim.eval('a:000'))))
+EOM
+endfunction
         """.format(name, __name__))
 
         def __(*args, **keywords):
@@ -78,11 +92,40 @@ def vimfunc(name):
 
 # Function
 
+_none_type    = type(None)
+_bool_type    = type(True)
+_string_type  = type('')
+_unicode_type = type(u'')
+_num_type     = type(0)
+_array_type   = type([])
+_dict_type    = type({})
+def vimliteral(obj):
+    kind = type(obj)
+    if   kind == _none_type:
+        return '0'
+    elif kind == _bool_type:
+        return '1' if obj else '0'
+    elif kind == _num_type:
+        return str(obj)
+    elif kind == _unicode_type:
+        return vimliteral(encode(obj))
+    elif kind == _string_type:
+        return '"' + escape(obj) + '"'
+    elif kind == _array_type:
+        return '[' + ','.join(map(vimliteral, obj)) + ']'
+    elif kind == _dict_type:
+        result = []
+        for k, v in obj.iteritems():
+            result.append(vimliteral(k) + ':' + vimliteral(v))
+        return '{' + ','.join(result) + '}'
+    else:
+        raise VimUtilError('vimliteral: can not convert')
+
 # escape "(double quote) and \(backslash)
 # Reference: http://lightson.dip.jp/zope/ZWiki/053_e6_96_87_e5_ad_97_e3_82_92_e3_82_a8_e3_82_b9_e3_82_b1_e3_83_bc_e3_83_97_e3_81_99_e3_82_8b_ef_bc_8f_e3_82_a8_e3_82_b9_e3_82_b1_e3_83_bc_e3_83_97_e3_82_92_e5_a4_96_e3_81_99
-_quote_by_backslash = re.compile(u'(["\\\\])')
+_quote_by_backslash = re.compile('(["\\\\])')
 def escape(s):
-    return _quote_by_backslash.sub(ur'\\\1', s)
+    return _quote_by_backslash.sub(r'\\\1', s)
 
 def echo_message(message):
     vim.command('echomsg "{0}"'.format(escape(message)))
@@ -114,7 +157,7 @@ def bufname(expression = ""):
     return vim.eval('bufname("{0}")'.format(expression))
 
 def let(name, value):
-    vim.eval('let {0} = "{1}"', name, escape(value))
+    vim.command('let {0} = {1}'.format(name, vimliteral(value)))
 
 def integer(name):
     return int(vim.eval(name))
