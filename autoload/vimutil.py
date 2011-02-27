@@ -1,7 +1,7 @@
 # coding=utf-8:
 # vimutil.py: vim utility for python
 # Version:     0.0.1
-# Last Change: 25 Feb 2011
+# Last Change: 27 Feb 2011
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,6 +27,7 @@ import re
 import vim
 
 VIM_ENCODING = vim.eval('&encoding')
+ENCODING_MODE = 'ignore'
 
 # Decorator
 
@@ -39,13 +40,16 @@ def buffer_modifiable(buffer):
         return __
     return _
 
-def do_if_available(condition, error_message = False):
+def do_if(condition, default = None, error_message = ''):
     def _(func):
         def __(*args, **keywords):
             if condition():
-                func(*args, **keywords)
-            elif error_message:
-                echo_error(error_message)
+                return func(*args, **keywords)
+            else:
+                if error_message:
+                    echo_error(str(error_message))
+                if default != None:
+                    return default
         return __
     return _
 
@@ -93,7 +97,7 @@ def redraw_statusline():
     vim.command('let &ro=&ro')
 
 def encode(s):
-    return s.encode(VIM_ENCODING, 'ignore')
+    return s.encode(VIM_ENCODING, ENCODING_MODE)
 
 def decode(s):
     return s.decode(VIM_ENCODING)

@@ -102,6 +102,12 @@ function! s:show_message(str)
     redraw
 endfunction
 
+function! s:show_error(str)
+    echohl ErrorMsg
+    echomsg str
+    echohl None
+endfunction
+
 function! s:check_python()
     let [major, minor, micro, releaselevel, serial] = pyutil#version()
     return major == 2 && minor >= 6
@@ -127,6 +133,24 @@ EOM
 " }}}
 
 " Interface {{{
+
+" Reference:
+" http://github.com/kana/config/blob/master/vim/dot.vim/autoload/wwwsearch.vim
+" http://lingr.com/room/vim/archives/2010/01/15#message-157044
+function! lingr#open_url(url)
+    if match(a:url, s:URL_PATTERN) == 0 && g:lingr_vim_command_to_open_url != ""
+        call s:show_message('open url: ' . a:url . ' ...')
+
+        " Do we need Vim 7.2 or higher to use second argument of shellescape()?
+        execute 'silent !' printf(g:lingr_vim_command_to_open_url, shellescape(a:url, 1))
+        redraw!
+
+        call s:show_message('open url: ' .  a:url . ' ... done!')
+    else
+        call s:show_error('Failed to open given url: ' . a:url)
+    endif
+endfunction
+
 function! lingr#launch(use_setting)
     " get username and password
     let user = a:use_setting && exists('g:lingr_vim_user')
@@ -208,119 +232,45 @@ python <<EOM
 # coding=utf-8
 
 @vimutil.vimfunc('lingr#say')
-@vimutil.do_if_available(lingr_is_alive, "lingr.vim is not initialized")
+@vimutil.do_if(lingr_is_alive, error_message = 'lingr.vim is not initialized')
 def lingr_vim_say(args):
     text = args[0]
     if not lingr_vim.say(text):
         vimutil.echo_error("Failed to say: {0}".format(text))
-EOM
-" function! lingr#say(text)
-"     python <<EOM
-" # coding=utf-8
-" def _lingr_temp():
-"     if lingr_vim.say(vim.eval('a:text')):
-"         pass
-"     else:
-"         lingrvim.echo_error("Failed to say: {0}".format(vim.eval('a:text')))
-" do_if_alive(_lingr_temp, show_error=True)
-" EOM
-" endfunction
 
-" Reference:
-" http://github.com/kana/config/blob/master/vim/dot.vim/autoload/wwwsearch.vim
-" http://lingr.com/room/vim/archives/2010/01/15#message-157044
-function! lingr#open_url(url)
-    if match(a:url, s:URL_PATTERN) == 0 && g:lingr_vim_command_to_open_url != ""
-        echo "open url:" a:url . "..."
-        sleep 1m
-        " Do we need Vim 7.2 or higher to use second argument of shellescape()?
-        execute 'silent !' printf(g:lingr_vim_command_to_open_url, shellescape(a:url, 1))
-        redraw!
-        echo "open url:" a:url . "... done!"
-    else
-        echohl ErrorMsg
-        echomsg "Failed to open given url: " . a:url
-        echohl None
-    endif
-endfunction
+@vimutil.vimfunc('lingr#unread_count')
+@vimutil.do_if(lingr_is_alive, default = -1)
+def lingr_vim_unread_count(args):
+    return lingr_vim.unread_count()
 
-function! lingr#unread_count()
-    let result = -1
-    python <<EOM
-# coding=utf-8
-do_if_alive(lambda: vim.command("let result = '{0}'".format(lingr_vim.unread_count())))
-EOM
-    return result
-endfunction
+@vimutil.vimfunc('lingr#status')
+@vimutil.do_if(lingr_is_alive, default = '')
+def lingr_vim_status(args):
+    return lingr_vim.status_message()
 
-function! lingr#status()
-    let result = ""
-    python <<EOM
-# coding=utf-8
-def _lingr_temp():
-    state = ""
-    if lingr_vim.state == lingrvim.LingrVim.CONNECTED:
-        state = "connected"
-    elif lingr_vim.state == lingrvim.LingrVim.OFFLINE:
-        state = "offline"
-    elif lingr_vim.state == lingrvim.LingrVim.RETRYING:
-        state = "waiting for reconnect..."
-    vim.command('let result = "{0}"'.format(state))
-do_if_alive(_lingr_temp)
-EOM
-    return result
-endfunction
+@vimutil.vimfunc('lingr#current_room')
+@vimutil.do_if(lingr_is_alive, default = '')
+def lingr_vim_current_room(args):
+    return vimutil.encode(lingr_vim.rooms[lingr_vim.current_room_id].name)
 
-function! lingr#current_room()
-    let result = ""
-    python <<EOM
-# coding=utf-8
-def _lingr_temp():
-    room_name = lingr_vim.rooms[lingr_vim.current_room_id].name.encode(vim.eval('&encoding'), lingrvim.ENCODING_MODE)
-    vim.command('let result = "{0}"'.format(room_name))
-do_if_alive(_lingr_temp)
-EOM
-    return result
-endfunction
-
-function! lingr#member_count()
-    let result = ""
-    python <<EOM
-# coding=utf-8
-def _lingr_temp():
-    count = len(filter(lambda x: hasattr(x, 'presence'),
+@vimutil.vimfunc('lingr#member_count')
+@vimutil.do_if(lingr_is_alive, default = 0)
+def lingr_vim_member_count(args):
+    return len(filter(lambda m: hasattr(m, 'presence'),
         lingr_vim.current_members))
-    vim.command('let result = "{0}"'.format(count))
-do_if_alive(_lingr_temp)
-EOM
-    return result
-endfunction
 
-function! lingr#online_member_count()
-    let result = ""
-    python <<EOM
-# coding=utf-8
-def _lingr_temp():
-    count = len(filter(lambda x: hasattr(x, 'presence') and x.presence,
+@vimutil.vimfunc('lingr#online_member_count')
+@vimutil.do_if(lingr_is_alive, default = 0)
+def lingr_vim_online_member_count(args):
+    return len(filter(lambda m: hasattr(m, 'presence') and x.presence,
         lingr_vim.current_members))
-    vim.command('let result = "{0}"'.format(count))
-do_if_alive(_lingr_temp)
-EOM
-    return result
-endfunction
 
-function! lingr#offline_member_count()
-    let result = ""
-    python <<EOM
-# coding=utf-8
-def _lingr_temp():
-    count = len(filter(lambda x: hasattr(x, 'presence') and not x.presence,
+@vimutil.vimfunc('lingr#offline_member_count')
+@vimutil.do_if(lingr_is_alive, default = 0)
+def lingr_vim_offline_member_count(args):
+    return len(filter(lambda m: hasattr(m, 'presence') and not x.presence,
         lingr_vim.current_members))
-    vim.command('let result = "{0}"'.format(count))
-do_if_alive(_lingr_temp)
 EOM
-    return result
-endfunction
 
 function! lingr#get_last_message()
     let result = {}

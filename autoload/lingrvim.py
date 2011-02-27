@@ -84,6 +84,13 @@ class LingrVim(object):
 
     CONNECTED, OFFLINE, RETRYING = range(3)
 
+    def status_message(self):
+        return [
+            'connected',
+            'offline',
+            'waiting for reconnect ...'
+            ][self.state]
+
     def __init__(self, user, password, version, messages_bufnr, members_bufnr, rooms_bufnr):
         ids = vim.eval('g:lingr_vim_additional_rooms')
 
