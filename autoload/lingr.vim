@@ -81,7 +81,7 @@ if !exists('g:lingr_vim_command_to_open_url')
 endif
 " }}}
 
-" Python Utilities {{{
+" Utility {{{
 python <<EOM
 # coding=utf-8
 def do_if_alive(func, show_error=False, *args, **keywords):
@@ -93,9 +93,7 @@ def do_if_alive(func, show_error=False, *args, **keywords):
 def lingr_is_alive():
     return 'lingr_vim' in globals() and lingr_vim and lingr_vim.is_alive()
 EOM
-" }}}
 
-" Utility {{{
 function! s:show_message(str)
     echo a:str
     sleep 1m
@@ -164,7 +162,7 @@ function! lingr#launch(use_setting)
     call s:show_message("Launching lingr.vim...")
 
     " create buffer
-    wincmd o
+    silent! wincmd o
     call s:MessagesBuffer.initialize()
     call s:MembersBuffer.initialize()
     call s:RoomsBuffer.initialize()
@@ -173,7 +171,7 @@ function! lingr#launch(use_setting)
     python <<EOM
 # coding=utf-8
 
-if 'lingr_vim' in globals() and lingr_vim:
+if lingr_is_alive():
     lingr_vim.destroy()
 
 lingr_vim = lingrvim.LingrVim(
@@ -208,7 +206,7 @@ function! lingr#exit()
 
     python <<EOM
 # coding=utf-8
-if 'lingr_vim' in globals() and lingr_vim:
+if lingr_is_alive():
     lingr_vim.destroy()
     lingr_vim = None
 EOM
@@ -262,48 +260,46 @@ def lingr_vim_member_count(args):
 @vimutil.vimfunc('lingr#online_member_count')
 @vimutil.do_if(lingr_is_alive, default = 0)
 def lingr_vim_online_member_count(args):
-    return len(filter(lambda m: hasattr(m, 'presence') and x.presence,
+    return len(filter(lambda m: hasattr(m, 'presence') and m.presence,
         lingr_vim.current_members))
 
 @vimutil.vimfunc('lingr#offline_member_count')
 @vimutil.do_if(lingr_is_alive, default = 0)
 def lingr_vim_offline_member_count(args):
-    return len(filter(lambda m: hasattr(m, 'presence') and not x.presence,
+    return len(filter(lambda m: hasattr(m, 'presence') and not m.presence,
         lingr_vim.current_members))
-EOM
 
-function! lingr#get_last_message()
-    let result = {}
-    python <<EOM
-def _lingr_temp():
+@vimutil.vimfunc('lingr#get_last_message')
+@vimutil.do_if(lingr_is_alive, default = {})
+def lingr_vim_get_last_message(args):
     m = lingr_vim.last_message
+    result = {}
     if m:
-        def set(name, value):
-            vim.command("let result.{0} = '{1}'".format(name, value))
-        enc = vim.eval('&encoding')
-        set('nickname', m.nickname.encode(enc, lingrvim.ENCODING_MODE))
-        set('text', re.sub("'", "''", m.text.encode(enc, lingrvim.ENCODING_MODE)))
-do_if_alive(_lingr_temp)
-EOM
+        result['nickname'] = m.nickname
+        result['text'] = m.text
     return result
-endfunction
 
-function! lingr#get_last_member()
-    let result = {}
-    python <<EOM
-def _lingr_temp():
+@vimutil.vimfunc('lingr#get_last_member')
+@vimutil.do_if(lingr_is_alive, default = {})
+def lingr_vim_get_last_member(args):
     m = lingr_vim.last_member
+    result = {}
     if m:
-        def set(name, value):
-            vim.command("let result.{0} = '{1}'".format(name, value))
-        enc = vim.eval('&encoding')
-        set('name', m.name.encode(enc, lingrvim.ENCODING_MODE))
-        set('username', m.username.encode(enc, lingrvim.ENCODING_MODE))
-        set('presence', int(m.presence))
-do_if_alive(_lingr_temp)
-EOM
+        result['name'] = m.name
+        result['username'] = m.username
+        result['presence'] = m.presence
     return result
-endfunction
+
+@vimutil.vimfunc('lingr#mark_as_read_current_room')
+@vimutil.do_if(lingr_is_alive)
+def lingr_vim_mark_as_read_current_room(args):
+    lingr_vim.set_focus(vimutil.bufname())
+
+@vimutil.vimfunc('lingr#testfunc')
+def lingr_vim_testfunc(args):
+    return {'args': args, 'num': 10, 'str': 'string'}
+
+EOM
 
 function! lingr#quote_operator(motion_wiseness)
     let lines = map(getline(line("'["), line("']")), '">" . v:val')
@@ -311,13 +307,6 @@ function! lingr#quote_operator(motion_wiseness)
     call s:SayBuffer.initialize()
     call setline(1, lines)
     call feedkeys('Go', 'n')
-endfunction
-
-function! lingr#mark_as_read_current_room()
-    python <<EOM
-# coding=utf-8
-lingr_vim.set_focus(vim.eval("bufname('')"))
-EOM
 endfunction
 " }}}
 
@@ -347,8 +336,6 @@ function! s:BufferBase.setup_base()
         setlocal conceallevel=2
         setlocal concealcursor=nc
     endif
-    " setlocal winfixwidth
-    " setlocal winfixheight
 
     " autocmd
     autocmd! * <buffer>
@@ -364,39 +351,41 @@ endfunction
 function! s:BufferBase.setup()
 endfunction
 
-function! s:BufferBase.on_enter()
-    python <<EOM
-# coding=utf-8
-do_if_alive(lambda: lingr_vim.set_focus(vim.eval("bufname('')")))
-EOM
-    let b:saved_updatetime = &updatetime
-    let &updatetime = g:lingr_vim_update_time
-endfunction
-
-function! s:BufferBase.on_leave()
-    python <<EOM
-# coding=utf-8
-do_if_alive(lambda: lingr_vim.set_focus(None))
-EOM
-    if exists('b:saved_updatetime')
-        let &updatetime = b:saved_updatetime
-    endif
-endfunction
-
 function! s:BufferBase.polling()
     silent call feedkeys("g\<Esc>", "n")
 endfunction
 
-function! s:BufferBase.rendering()
-    python <<EOM
+python <<EOM
 # coding=utf-8
-do_if_alive(lambda: lingr_vim.process_queue())
+
+@vimutil.vimfunc('s:BufferBase.on_enter')
+@vimutil.do_if(lingr_is_alive)
+def lingr_vim_BufferBase_on_enter(args):
+    lingr_vim.set_focus(vimutil.bufname())
+    vimutil.let('b:saved_updatetime', vim.eval('&updatetime'))
+    vimutil.let('&updatetime', vim.eval('g:lingr_vim_update_time'))
+
+@vimutil.vimfunc('s:BufferBase.on_leave')
+@vimutil.do_if(lingr_is_alive)
+def lingr_vim_BufferBase_on_leave(args):
+    lingr_vim.set_focus(None)
+    if vimutil.exists('b:saved_updatetime'):
+        vimutil.let('&updatetime', vim.eval('b:saved_updatetime'))
+
+@vimutil.vimfunc('s:BufferBase.rendering')
+@vimutil.do_if(lingr_is_alive)
+def lingr_vim_BufferBase_rendering(args):
+    lingr_vim.process_queue()
+
 EOM
-endfunction
 " }}}
 
 " object MessagesBuffer {{{
 let s:MessagesBuffer = copy(s:BufferBase)
+
+function! lingr#messages_buffer()
+    return s:MessagesBuffer
+endfunction
 
 function! s:MessagesBuffer.layout()
     execute 'edit' s:MESSAGES_BUFNAME
@@ -413,19 +402,19 @@ function! s:MessagesBuffer.setup()
 
     " mapping
     nnoremap <silent> <buffer> <Plug>(lingr-messages-messages-buffer-action)
-                \ :<C-u>call <SID>MessagesBuffer_action()<CR>
+                \ :<C-u>call lingr#messages_buffer().action()<CR>
     nnoremap <silent> <buffer> <Plug>(lingr-messages-search-delimiter-forward)
-                \ :<C-u>call <SID>MessagesBuffer_search_delimiter('')<CR>
+                \ :<C-u>call lingr#messages_buffer().search_delimiter('')<CR>
     nnoremap <silent> <buffer> <Plug>(lingr-messages-search-delimiter-backward)
-                \ :<C-u>call <SID>MessagesBuffer_search_delimiter('b')<CR>
+                \ :<C-u>call lingr#messages_buffer().search_delimiter('b')<CR>
     nnoremap <silent> <buffer> <Plug>(lingr-messages-select-next-room)
-                \ :<C-u>call <SID>MessagesBuffer_select_room(v:count1)<CR>
+                \ :<C-u>call lingr#messages_buffer().select_room(v:count1)<CR>
     nnoremap <silent> <buffer> <Plug>(lingr-messages-select-prev-room)
-                \ :<C-u>call <SID>MessagesBuffer_select_room(- v:count1)<CR>
+                \ :<C-u>call lingr#messages_buffer().select_room(- v:count1)<CR>
     nnoremap <silent> <buffer> <Plug>(lingr-messages-show-say-buffer)
-                \ :<C-u>call <SID>MessagesBuffer_show_say_buffer()<CR>
+                \ :<C-u>call lingr#messages_buffer().show_say_buffer()<CR>
     nnoremap <silent> <buffer> <Plug>(lingr-messages-toggle-favorite)
-                \ :<C-u>call <SID>MessagesBuffer_toggle_favorite()<CR>
+                \ :<C-u>call lingr#messages_buffer().toggle_favorite()<CR>
 
     nnoremap <script> <silent> <Plug>(lingr-messages-quote)
                 \ :<C-u>let &operatorfunc='lingr#quote_operator'<CR>g@
@@ -453,7 +442,7 @@ function! s:MessagesBuffer.scroll_to_end()
     $
 endfunction
 
-function! s:MessagesBuffer_action()
+function! s:MessagesBuffer.action()
     let initialized = 0
     python <<EOM
 # coding=utf-8
@@ -463,13 +452,13 @@ EOM
     if !initialized
         return
     elseif line('.') == 1
-        call s:MessagesBuffer_get_archives()
+        call s:MessagesBuffer.get_archives()
     elseif match(expand('<cWORD>'), s:URL_PATTERN) == 0
         call lingr#open_url(expand('<cWORD>'))
     endif
 endfunction
 
-function! s:MessagesBuffer_get_archives()
+function! s:MessagesBuffer.get_archives()
     let oldLines = line('$')
     echo "Getting archives..."
     sleep 1m
@@ -485,11 +474,11 @@ EOM
     echo "Getting archives... done!"
 endfunction
 
-function! s:MessagesBuffer_search_delimiter(flags)
+function! s:MessagesBuffer.search_delimiter(flags)
     call search('^' . s:ARCHIVES_DELIMITER, a:flags)
 endfunction
 
-function! s:MessagesBuffer_select_room(offset)
+function! s:MessagesBuffer.select_room(offset)
     python <<EOM
 # coding=utf-8
 do_if_alive(lambda: lingr_vim.select_room_by_offset(int(vim.eval("a:offset"))))
@@ -497,7 +486,7 @@ EOM
     call s:MessagesBuffer.scroll_to_end()
 endfunction
 
-function! s:MessagesBuffer_show_say_buffer()
+function! s:MessagesBuffer.show_say_buffer()
     call s:SayBuffer.initialize()
     call feedkeys('GA', 'n')
     python <<EOM
@@ -506,7 +495,7 @@ lingr_vim.set_focus(vim.eval("bufname('')"))
 EOM
 endfunction
 
-function! s:MessagesBuffer_toggle_favorite()
+function! s:MessagesBuffer.toggle_favorite()
     python <<EOM
 #coding=utf-8
 def _lingr_temp():
@@ -520,6 +509,10 @@ endfunction
 
 " object MembersBuffer {{{
 let s:MembersBuffer = copy(s:BufferBase)
+
+function! lingr#members_buffer()
+    return s:MembersBuffer
+endfunction
 
 function! s:MembersBuffer.layout()
     execute 'topleft vsplit' s:MEMBERS_BUFNAME
@@ -539,7 +532,7 @@ function! s:MembersBuffer.setup()
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-members-open-member)
-                \ :<C-u>call <SID>MembersBuffer_open()<CR>
+                \ :<C-u>call lingr#members_buffer().open()<CR>
 
     nmap <buffer> <silent> o <Plug>(lingr-members-open-member)
     nmap <buffer> <silent> <2-LeftMouse> <Plug>(lingr-members-open-member)
@@ -548,7 +541,7 @@ function! s:MembersBuffer.setup()
     let &filetype = s:MEMBERS_FILETYPE
 endfunction
 
-function! s:MembersBuffer_open()
+function! s:MembersBuffer.open()
     python <<EOM
 # coding=utf-8
 def _lingr_temp():
@@ -563,6 +556,10 @@ endfunction
 
 " object RoomsBuffer {{{
 let s:RoomsBuffer = copy(s:BufferBase)
+
+function! lingr#rooms_buffer()
+    return s:RoomsBuffer
+endfunction
 
 function! s:RoomsBuffer.layout()
     execute 'leftabove split' s:ROOMS_BUFNAME
@@ -583,9 +580,9 @@ function! s:RoomsBuffer.setup()
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-rooms-select-room)
-                \ :<C-u>call <SID>RoomsBuffer_select()<CR>
+                \ :<C-u>call lingr#rooms_buffer().select()<CR>
     nnoremap <buffer> <silent> <Plug>(lingr-rooms-open-room)
-                \ :<C-u>call <SID>RoomsBuffer_open()<CR>
+                \ :<C-u>call lingr#rooms_buffer().open()<CR>
 
     nmap <buffer> <silent> <CR> <Plug>(lingr-rooms-select-room)
     nmap <buffer> <silent> <LeftRelease> <Plug>(lingr-rooms-select-room)
@@ -596,7 +593,7 @@ function! s:RoomsBuffer.setup()
     let &filetype = s:ROOMS_FILETYPE
 endfunction
 
-function! s:RoomsBuffer_select()
+function! s:RoomsBuffer.select()
     python <<EOM
 # coding=utf-8
 def _lingr_temp():
@@ -607,7 +604,7 @@ do_if_alive(_lingr_temp)
 EOM
 endfunction
 
-function! s:RoomsBuffer_open()
+function! s:RoomsBuffer.open()
     python <<EOM
 # coding=utf-8
 def _lingr_temp():
@@ -621,6 +618,10 @@ endfunction
 
 " object SayBuffer {{{
 let s:SayBuffer = copy(s:BufferBase)
+
+function! lingr#say_buffer()
+    return s:SayBuffer
+endfunction
 
 function! s:SayBuffer.layout()
     execute 'rightbelow split' s:SAY_BUFNAME
@@ -639,30 +640,31 @@ function! s:SayBuffer.setup()
     autocmd BufEnter <buffer> setlocal buftype=acwrite
     autocmd BufLeave <buffer> setlocal buftype=nofile
     autocmd InsertLeave <buffer> call s:SayBuffer.rendering()
-    autocmd BufWriteCmd <buffer> call s:SayBuffer_say()
+    autocmd BufWriteCmd <buffer> call s:SayBuffer.say()
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-say-say)
-                \ :<C-u>call <SID>SayBuffer_say() \| call <SID>SayBuffer_close()<CR>
+                \ :<C-u>call lingr#say_buffer().say() \| call lingr#say_buffer().close()<CR>
     nnoremap <buffer> <silent> <Plug>(lingr-say-close)
-                \ :<C-u>call <SID>SayBuffer_close()<CR>
+                \ :<C-u>call lingr#say_buffer().close()<CR>
+
     nmap <buffer> <silent> <CR> <Plug>(lingr-say-say)
     nmap <buffer> <silent> <Esc> <Plug>(lingr-say-close)
 
     " for custormizing
     " ex) autocmd FileType lingr-say imap <buffer> <CR> <Plug>(lingr-say-insert-mode-say)
     inoremap <buffer> <silent> <Plug>(lingr-say-insert-mode-say)
-                \ <Esc>:<C-u>call <SID>SayBuffer_say()<CR>i
+                \ <Esc>:<C-u>call lingr#say_buffer().say()<CR>i
 
     " filetype
     let &filetype = s:SAY_FILETYPE
 endfunction
 
-function! s:SayBuffer_close()
+function! s:SayBuffer.close()
     close
 endfunction
 
-function! s:SayBuffer_say()
+function! s:SayBuffer.say()
     let text = join(getline(0, line('$')), "\n")
     if len(text) > 0
         call lingr#say(text)
