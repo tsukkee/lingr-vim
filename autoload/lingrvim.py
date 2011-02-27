@@ -1,7 +1,7 @@
 # coding=utf-8:
 # lingr.vim: Lingr client for Vim
 # Version:     0.6.0
-# Last Change: 24 Feb 2011
+# Last Change: 27 Feb 2011
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -31,6 +31,7 @@ import time
 import logging
 
 VIM_ENCODING = vim.eval('&encoding')
+ENCODING_MODE = 'ignore'
 
 class LingrObserver(threading.Thread):
     def __init__(self, lingr):
@@ -318,7 +319,7 @@ class LingrVim(object):
             mark = " *" if id == self.current_room_id else ""
             unread = " (" + str(self.unread_counts[id]) + ")"\
                 if self.unread_counts[id] > 0 else ""
-            text = self.rooms[id].name.encode(VIM_ENCODING) + unread + mark
+            text = self.rooms[id].name.encode(VIM_ENCODING, ENCODING_MODE) + unread + mark
             self.rooms_buffer.append(text)
 
         del self.rooms_buffer[0]
@@ -333,18 +334,18 @@ class LingrVim(object):
 
         for m in onlines:
             owner = '(owner)' if m.owner else ''
-            text = m.name.encode(VIM_ENCODING) + owner + " +"
+            text = m.name.encode(VIM_ENCODING, ENCODING_MODE) + owner + " +"
             self.members_buffer.append(text)
             self.current_members.append(m)
 
         for m in offlines:
             owner = '(owner)' if m.owner else ''
-            text = m.name.encode(VIM_ENCODING) + owner + " -"
+            text = m.name.encode(VIM_ENCODING, ENCODING_MODE) + owner + " -"
             self.members_buffer.append(text)
             self.current_members.append(m)
 
         for b in self.lingr.rooms[self.current_room_id].bots:
-            self.members_buffer.append(b.name.encode(VIM_ENCODING) + " *")
+            self.members_buffer.append(b.name.encode(VIM_ENCODING, ENCODING_MODE) + " *")
             self.current_members.append(b)
 
         del self.members_buffer[0]
@@ -357,7 +358,7 @@ class LingrVim(object):
             self.messages_buffer.append(vim.eval('s:ARCHIVES_DELIMITER'))
         else:
             if self.last_speaker_id != message.speaker_id:
-                name = message.nickname.encode(VIM_ENCODING)
+                name = message.nickname.encode(VIM_ENCODING, ENCODING_MODE)
                 mine = "*" if message.speaker_id == self.lingr.username else ""
                 t = time.strftime(vim.eval('g:lingr_vim_time_format'), message.timestamp)
                 text = LingrVim.MESSAGE_HEADER.format(name, t, mine)
@@ -375,7 +376,7 @@ class LingrVim(object):
                     space = '*'
                 is_first_line = False
 
-                self.messages_buffer.append(space + text.encode(VIM_ENCODING))
+                self.messages_buffer.append(space + text.encode(VIM_ENCODING, ENCODING_MODE))
                 current_pos += 1
                 self.line2message[current_pos] = message
 
@@ -383,7 +384,7 @@ class LingrVim(object):
         format = LingrVim.JOIN_MESSAGE if member.presence\
             else LingrVim.LEAVE_MESSAGE
         self.messages_buffer.append(
-            format.format(member.name.encode(VIM_ENCODING)))
+            format.format(member.name.encode(VIM_ENCODING, ENCODING_MODE)))
 
     def _dummy_message(self):
         return lingr.Message({

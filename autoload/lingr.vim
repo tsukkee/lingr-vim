@@ -1,6 +1,6 @@
 " lingr.vim: Lingr client for Vim
 " Version:     0.6.0
-" Last Change: 24 Feb 2011
+" Last Change: 27 Feb 2011
 " Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 "
 "
@@ -272,7 +272,7 @@ function! lingr#current_room()
     python <<EOM
 # coding=utf-8
 def _lingr_temp():
-    room_name = lingr_vim.rooms[lingr_vim.current_room_id].name.encode(vim.eval('&encoding'))
+    room_name = lingr_vim.rooms[lingr_vim.current_room_id].name.encode(vim.eval('&encoding'), lingrvim.ENCODING_MODE)
     vim.command('let result = "{0}"'.format(room_name))
 do_if_alive(_lingr_temp)
 EOM
@@ -327,8 +327,8 @@ def _lingr_temp():
         def set(name, value):
             vim.command("let result.{0} = '{1}'".format(name, value))
         enc = vim.eval('&encoding')
-        set('nickname', m.nickname.encode(enc))
-        set('text', re.sub("'", "''", m.text.encode(enc)))
+        set('nickname', m.nickname.encode(enc, lingrvim.ENCODING_MODE))
+        set('text', re.sub("'", "''", m.text.encode(enc, lingrvim.ENCODING_MODE)))
 do_if_alive(_lingr_temp)
 EOM
     return result
@@ -343,8 +343,8 @@ def _lingr_temp():
         def set(name, value):
             vim.command("let result.{0} = '{1}'".format(name, value))
         enc = vim.eval('&encoding')
-        set('name', m.name.encode(enc))
-        set('username', m.username.encode(enc))
+        set('name', m.name.encode(enc, lingrvim.ENCODING_MODE))
+        set('username', m.username.encode(enc, lingrvim.ENCODING_MODE))
         set('presence', int(m.presence))
 do_if_alive(_lingr_temp)
 EOM

@@ -1,7 +1,7 @@
 # coding=utf-8
 # lingr.vim: Lingr client for Vim
 # Version:     0.6.0
-# Last Change: 24 Feb 2011
+# Last Change: 27 Feb 2011
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -37,6 +37,8 @@ import logging
 import json
 import os
 
+ENCODING_MODE = 'ignore'
+
 class Member(object):
     def __init__(self, res):
         self.username = res["username"]
@@ -49,7 +51,7 @@ class Member(object):
 
     def __repr__(self):
         return "<{0}.{1} {2.username} {3}>".format(
-            __name__, self.__class__.__name__, self, self.name.encode('utf-8'))
+            __name__, self.__class__.__name__, self, self.name.encode('utf-8', ENCODING_MODE))
 
 
 class Bot(object):
@@ -126,7 +128,7 @@ class Message(object):
 
     def __repr__(self):
         return "<{0}.{1} {2.speaker_id}: {3}>".format(
-            __name__, self.__class__.__name__, self, self.text.encode('utf-8'))
+            __name__, self.__class__.__name__, self, self.text.encode('utf-8', ENCODING_MODE))
 
 
 class APIError(Exception):
@@ -335,7 +337,7 @@ class Connection(object):
     def say(self, room_id, text):
         self._debug("requesting room/say: " + room_id + " " + text)
         res = self._post("room/say",
-            {"session": self.session, "room": room_id, "nickname": self.nickname, "text": text.encode('utf-8')})
+            {"session": self.session, "room": room_id, "nickname": self.nickname, "text": text.encode('utf-8', ENCODING_MODE)})
         self._debug("room/say response: " + str(res))
         return res
 
