@@ -77,7 +77,7 @@ def vimfunc(name):
 
         vim.command("""
 function! {0}(...)
-python <<EOM
+    python <<EOM
 # coding=utf-8
 
 vim.command('return ' + {1}.vimliteral({1}._functions_for_vim['{0}'](vim.eval('a:000'))))
@@ -98,6 +98,7 @@ _string_type  = type('')
 _unicode_type = type(u'')
 _num_type     = type(0)
 _array_type   = type([])
+_tuple_type   = type(())
 _dict_type    = type({})
 def vimliteral(obj):
     kind = type(obj)
@@ -113,6 +114,8 @@ def vimliteral(obj):
         return '"' + escape(obj) + '"'
     elif kind == _array_type:
         return '[' + ','.join(map(vimliteral, obj)) + ']'
+    elif kind == _tuple_type:
+        return vimliteral(list(obj))
     elif kind == _dict_type:
         result = []
         for k, v in obj.iteritems():
