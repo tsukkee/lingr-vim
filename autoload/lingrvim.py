@@ -28,13 +28,11 @@ import lingr
 import vimutil
 import threading
 import socket
+import httplib
 import time
 import logging
 
-VIM_ENCODING = vim.eval('&encoding')
-ENCODING_MODE = 'ignore'
-
-class LingrObserver(threading.Thread):
+class LingrObserver(threading.Thread): # {{{
     def __init__(self, lingr):
         super(LingrObserver, self).__init__()
         self.lingr = lingr
@@ -44,28 +42,17 @@ class LingrObserver(threading.Thread):
             self.lingr.start()
         except lingr.APIError as e:
             vimutil.echo_error(str(e))
+# }}}
 
-
-class RenderOperation(object):
+class RenderOperation(object): # {{{
     CONNECTED, MESSAGE, PRESENCE, UNREAD, ERROR = range(5)
 
     def __init__(self, type, params = {}):
         self.type = type
         self.params = params
+# }}}
 
-
-def make_modifiable(buffer, func):
-    def do(*args, **keywords):
-        vim.command("call setbufvar({0.number}, '&modifiable', 1)".format(buffer))
-        func(*args, **keywords)
-        vim.command("call setbufvar({0.number}, '&modifiable', 0)".format(buffer))
-    return do
-
-def doautocmd(event):
-    vim.command('doautocmd User plugin-lingr-' + event)
-
-
-class LingrVim(object):
+class LingrVim(object): # {{{
     JOIN_MESSAGE         = "-- {0} is now online"
     LEAVE_MESSAGE        = "-- {0} is now offline"
     GET_ARCHIVES_MESSAGE = "[Read more from archives...]"
@@ -83,7 +70,7 @@ class LingrVim(object):
     def __init__(self, user, password, version, messages_bufnr, members_bufnr, rooms_bufnr):
         ids = vim.eval('g:lingr_vim_additional_rooms')
 
-        if int(vim.eval('exists("g:lingr_vim_debug_log_file")')):
+        if vimutil.integer('exists("g:lingr_vim_debug_log_file")'):
             vimutil.echo_message("lingr.vim starts with debug mode")
             logger = lingr._get_debug_logger(vim.eval('g:lingr_vim_debug_log_file'))
             self.lingr = lingr.Connection(user, password, version, True,
@@ -94,24 +81,21 @@ class LingrVim(object):
         self.state = LingrVim.OFFLINE
 
         # buffers
-        # indices of vim.buffers are different from bufnrs
-        def find_buffer(bufnr):
-            return [b for b in vim.buffers if b.number == bufnr][0]
-        self.messages_buffer = find_buffer(messages_bufnr)
-        self.members_buffer = find_buffer(members_bufnr)
-        self.rooms_buffer = find_buffer(rooms_bufnr)
+        self.messages_buffer = vimutil.find_buffer(messages_bufnr)
+        self.members_buffer = vimutil.find_buffer(members_bufnr)
+        self.rooms_buffer = vimutil.find_buffer(rooms_bufnr)
 
         # generate render functions
         self.render_messages =\
-            make_modifiable(self.messages_buffer, self._render_messages)
+            vimutil.buffer_modifiable(self.messages_buffer)(self._render_messages)
         self.render_members =\
-            make_modifiable(self.members_buffer, self._render_members)
+            vimutil.buffer_modifiable(self.members_buffer)(self._render_members)
         self.render_rooms =\
-            make_modifiable(self.rooms_buffer, self._render_rooms)
+            vimutil.buffer_modifiable(self.rooms_buffer)(self._render_rooms)
         self.show_message =\
-            make_modifiable(self.messages_buffer, self._show_message)
+            vimutil.buffer_modifiable(self.messages_buffer)(self._show_message)
         self.show_presence_message =\
-            make_modifiable(self.messages_buffer, self._show_presence_message)
+            vimutil.buffer_modifiable(self.messages_buffer)(self._show_presence_message)
 
         # for display messages
         self.current_room_id = ""
@@ -121,8 +105,8 @@ class LingrVim(object):
         self.current_members = [] # ["online1", "online2", ... , "offline1", ... , "bot1", ...
         self.messages = {}        # {"room1": [message1, message2], "room2": [message1, ...
         self.unread_counts = {}   # {"room1": 2, "room2": 0, ...
-        self.focused_buffer = None
         self.line2message = {}    # {0: lingr.Message, 3: lingr.Message, ... , n: lingr.Message, ...
+        self.focused_buffer_name = ""
 
         # for threading
         self.render_queue = [] # for RenderOperation
@@ -167,7 +151,7 @@ class LingrVim(object):
                 self.messages_buffer.number,
                 self.members_buffer.number,
                 self.rooms_buffer.number]:
-                self.focused_buffer = vim.eval("bufname('')")
+                self.focused_buffer_name = vimutil.bufname()
 
             vimutil.echo_message('lingr.vim has connected to Lingr')
 
@@ -185,8 +169,8 @@ class LingrVim(object):
             self.messages[room.id].append(message)
             self.push_operation(RenderOperation(RenderOperation.MESSAGE,
                 {"message": message, "room": room}))
-            if int(vim.eval('g:lingr_vim_count_unread_at_current_room')) \
-                or not self.focused_buffer or self.current_room_id != room.id:
+            if vimutil.integer('g:lingr_vim_count_unread_at_current_room') \
+                or not self.focused_buffer_name or self.current_room_id != room.id:
                 self.unread_counts[room.id] += 1
                 self.push_operation(RenderOperation(RenderOperation.UNREAD))
 
@@ -213,17 +197,17 @@ class LingrVim(object):
 
     def set_focus(self, focused):
         if focused:
-            self.focused_buffer = focused
+            self.focused_buffer_name = focused
             self.unread_counts[self.current_room_id] = 0
             self.render_rooms()
         else:
-            self.focused_buffer = None
+            self.focused_buffer_name = ""
 
-    def get_room_id_by_lnum(self, lnum):
+    def get_room_id(self, lnum):
         return self.room_ids[lnum - 1]
 
     def select_room_by_lnum(self, lnum):
-        self.select_room(self.get_room_id_by_lnum(lnum))
+        self.select_room(self.get_room_id(lnum))
 
     def select_room_by_offset(self, offset):
         rooms = self.room_ids
@@ -236,7 +220,7 @@ class LingrVim(object):
             self.unread_counts[room_id] = 0
             self.render_all()
 
-    def get_member_id_by_lnum(self, lnum):
+    def get_member_id(self, lnum):
         m = self.current_members[lnum - 1]
         return m.username if hasattr(m, 'username') else 'bot/' + m.id
 
@@ -245,7 +229,15 @@ class LingrVim(object):
         if len(messages) == 0:
             return
 
-        res = self.lingr.get_archives(self.current_room_id, messages[0].id)
+        res = {}
+        try:
+            res = self.lingr.get_archives(self.current_room_id, messages[0].id)
+        except lingr.APIError as e:
+            vimutil.echo_error(str(e))
+            return
+        except (socket.error, httplib.HTTPException) as e:
+            vimutil.echo_error("Failed to get archives due to network error")
+            return
 
         archives = []
         for m in res["messages"]:
@@ -260,7 +252,7 @@ class LingrVim(object):
     def say(self, text):
         if self.current_room_id:
             try:
-                return self.lingr.say(self.current_room_id, text.decode(VIM_ENCODING))
+                return self.lingr.say(self.current_room_id, vimutil.decode(text))
             except lingr.APIError as e:
                 vimutil.echo_error(str(e))
                 return False
@@ -315,7 +307,7 @@ class LingrVim(object):
             mark = " *" if id == self.current_room_id else ""
             unread = " (" + str(self.unread_counts[id]) + ")"\
                 if self.unread_counts[id] > 0 else ""
-            text = self.rooms[id].name.encode(VIM_ENCODING, ENCODING_MODE) + unread + mark
+            text = vimutil.encode(self.rooms[id].name) + unread + mark
             self.rooms_buffer.append(text)
 
         del self.rooms_buffer[0]
@@ -330,18 +322,18 @@ class LingrVim(object):
 
         for m in onlines:
             owner = '(owner)' if m.owner else ''
-            text = m.name.encode(VIM_ENCODING, ENCODING_MODE) + owner + " +"
+            text = vimutil.encode(m.name) + owner + " +"
             self.members_buffer.append(text)
             self.current_members.append(m)
 
         for m in offlines:
             owner = '(owner)' if m.owner else ''
-            text = m.name.encode(VIM_ENCODING, ENCODING_MODE) + owner + " -"
+            text = vimutil.encode(m.name) + owner + " -"
             self.members_buffer.append(text)
             self.current_members.append(m)
 
         for b in self.lingr.rooms[self.current_room_id].bots:
-            self.members_buffer.append(b.name.encode(VIM_ENCODING, ENCODING_MODE) + " *")
+            self.members_buffer.append(vimutil.encode(b.name) + " *")
             self.current_members.append(b)
 
         del self.members_buffer[0]
@@ -354,7 +346,7 @@ class LingrVim(object):
             self.messages_buffer.append(vim.eval('s:ARCHIVES_DELIMITER'))
         else:
             if self.last_speaker_id != message.speaker_id:
-                name = message.nickname.encode(VIM_ENCODING, ENCODING_MODE)
+                name = vimutil.encode(message.nickname)
                 mine = "*" if message.speaker_id == self.lingr.username else ""
                 t = time.strftime(vim.eval('g:lingr_vim_time_format'), message.timestamp)
                 text = LingrVim.MESSAGE_HEADER.format(name, t, mine)
@@ -372,7 +364,7 @@ class LingrVim(object):
                     space = '*'
                 is_first_line = False
 
-                self.messages_buffer.append(space + text.encode(VIM_ENCODING, ENCODING_MODE))
+                self.messages_buffer.append(space + vimutil.encode(text))
                 current_pos += 1
                 self.line2message[current_pos] = message
 
@@ -380,7 +372,7 @@ class LingrVim(object):
         format = LingrVim.JOIN_MESSAGE if member.presence\
             else LingrVim.LEAVE_MESSAGE
         self.messages_buffer.append(
-            format.format(member.name.encode(VIM_ENCODING, ENCODING_MODE)))
+            format.format(vimutil.encode(member.name)))
 
     def _dummy_message(self):
         return lingr.Message({
@@ -404,6 +396,9 @@ class LingrVim(object):
     def process_queue(self):
         if len(self.render_queue) == 0:
             return
+
+        def doautocmd(event):
+            vim.command('doautocmd User plugin-lingr-' + event)
 
         self.queue_lock.acquire()
         for op in self.render_queue:
@@ -431,8 +426,6 @@ class LingrVim(object):
                 doautocmd('unread')
 
             elif op.type == RenderOperation.ERROR:
-                # vim.command('echoerr ""')
-                # vimutil.echo_error("Error test")
                 vimutil.redraw_statusline()
                 doautocmd('error')
 
@@ -440,11 +433,11 @@ class LingrVim(object):
         self.queue_lock.release()
 
     def _auto_scroll(self):
-        if self.focused_buffer == vim.eval('s:MESSAGES_BUFNAME')\
+        if self.focused_buffer_name == vim.eval('s:MESSAGES_BUFNAME')\
             and int(vim.eval("line('$') - line('.') < g:lingr_vim_remain_height_to_auto_scroll")):
             vim.command('silent $')
 
-        elif self.focused_buffer:
+        elif self.focused_buffer_name:
             cursor = vim.current.window.cursor
             current_winnr = vim.eval('winnr()')
 
@@ -456,3 +449,4 @@ class LingrVim(object):
 
             vim.command("{0} wincmd w".format(current_winnr))
             vim.current.window.cursor = cursor
+# }}}

@@ -1,7 +1,7 @@
 # coding=utf-8:
 # vimutil.py: vim utility for python
 # Version:     0.0.1
-# Last Change: 27 Feb 2011
+# Last Change: 28 Feb 2011
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,8 +23,8 @@
 #     THE SOFTWARE.
 # }}}
 
-import re
 import vim
+import re
 
 VIM_ENCODING = vim.eval('&encoding')
 ENCODING_MODE = 'ignore'
@@ -149,6 +149,7 @@ def exists(value_name):
     return int(vim.eval('exists("{0}")'.format(value_name)))
 
 def find_buffer(bufnr):
+    # indices of vim.buffers are different from bufnrs
     buf = [b for b in vim.buffers if b.number == bufnr]
     return buf[0] if len(buf) > 0 else None
 

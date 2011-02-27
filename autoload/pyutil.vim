@@ -1,6 +1,6 @@
 " pyutil.vim: python utility for vim
 " Version:     0.0.1
-" Last Change: 25 Feb 2011
+" Last Change: 28 Feb 2011
 " Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 " Licence:     The MIT License {{{
 "     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,6 +21,8 @@
 "     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 "     THE SOFTWARE.
 " }}}
+
+let s:path = expand('<sfile>:p:h')
 
 function! pyutil#version()
     " check +python
@@ -43,24 +45,26 @@ EOM
     return result
 endfunction
 
+function! pyutil#use()
+    call pyutil#append_path(s:path)
+endfunction
+
 function! pyutil#append_path(path)
     python <<EOM
-#ch coding=utf-8
+# coding=utf-8
 import vim
 import sys
-print 'path: ' + vim.eval('a:path')
 if not vim.eval('a:path') in sys.path:
     sys.path.append(vim.eval('a:path'))
 EOM
 endfunction
 
 function! pyutil#get_value(name)
-    let result = ""
     python<<EOM
 # coding=utf-8
-vim.eval('let result = "{0}"'.format(eval(vim.eval('a:name')))
+import vimutil
+vim.command('return {0}'.format(vimutil.vimliteral(eval(vim.eval('a:name')))))
 EOM
-    return result
 endfunction
 
 

@@ -84,12 +84,6 @@ endif
 " Utility {{{
 python <<EOM
 # coding=utf-8
-def do_if_alive(func, show_error=False, *args, **keywords):
-    if 'lingr_vim' in globals() and lingr_vim and lingr_vim.is_alive():
-        func(*args, **keywords)
-    elif show_error:
-        lingrvim.echo_error("lingr.vim has not been initialized")
-
 def lingr_is_alive():
     return 'lingr_vim' in globals() and lingr_vim and lingr_vim.is_alive()
 EOM
@@ -116,17 +110,14 @@ endfunction
 if !s:check_python()
     echoerr 'This plugin needs +python (Python 2.6 or 2.7)'
     finish
+else
+    call pyutil#use()
 endif
 
-call pyutil#append_path(expand("<sfile>:p:h"))
-
-python<<EOM
+python <<EOM
 import vim
 import vimutil
 import lingrvim
-import re
-import socket
-import httplib
 EOM
 " }}}
 
@@ -414,13 +405,13 @@ function! s:MessagesBuffer.setup()
     nnoremap <silent> <buffer> <Plug>(lingr-messages-show-say-buffer)
                 \ :<C-u>call lingr#messages_buffer().show_say_buffer()<CR>
     nnoremap <silent> <buffer> <Plug>(lingr-messages-toggle-favorite)
-                \ :<C-u>call lingr#messages_buffer().toggle_favorite()<CR>
+                \ :<C-u>call lingr#messages_buffer().toggle_favorite(line('.'))<CR>
 
-    nnoremap <script> <silent> <Plug>(lingr-messages-quote)
+    nnoremap <silent> <buffer> <Plug>(lingr-messages-quote)
                 \ :<C-u>let &operatorfunc='lingr#quote_operator'<CR>g@
-    vnoremap <script> <silent> <Plug>(lingr-messages-quote)
+    vnoremap <silent> <buffer> <Plug>(lingr-messages-quote)
                 \ :<C-u>let &operatorfunc='lingr#quote_operator'<CR>gvg@
-    onoremap <script> <silent> <Plug>(lingr-messages-quote) g@
+    onoremap <silent> <buffer> <Plug>(lingr-messages-quote) g@
 
     nmap <silent> <buffer> <CR> <Plug>(lingr-messages-messages-buffer-action)
     nmap <silent> <buffer> <LeftRelease> <Plug>(lingr-messages-messages-buffer-action)
@@ -430,7 +421,7 @@ function! s:MessagesBuffer.setup()
     nmap <silent> <buffer> <C-p> <Plug>(lingr-messages-select-prev-room)
     nmap <silent> <buffer> s <Plug>(lingr-messages-show-say-buffer)
     nmap <silent> <buffer> f <Plug>(lingr-messages-toggle-favorite)
-    map <silent> <buffer> Q <Plug>(lingr-messages-quote)
+    map  <silent> <buffer> Q <Plug>(lingr-messages-quote)
 
     " filetype
     let &filetype = s:MESSAGES_FILETYPE
@@ -443,13 +434,7 @@ function! s:MessagesBuffer.scroll_to_end()
 endfunction
 
 function! s:MessagesBuffer.action()
-    let initialized = 0
-    python <<EOM
-# coding=utf-8
-do_if_alive(lambda: vim.command('let initialized = 1'), show_error=True)
-EOM
-
-    if !initialized
+    if !pyutil#get_value('lingr_is_alive()')
         return
     elseif line('.') == 1
         call s:MessagesBuffer.get_archives()
@@ -459,52 +444,47 @@ EOM
 endfunction
 
 function! s:MessagesBuffer.get_archives()
-    let oldLines = line('$')
-    echo "Getting archives..."
-    sleep 1m
-    redraw
+    if !pyutil#get_value('lingr_is_alive()')
+        return
+    endif
+
+    let old_line = line('$')
+    call s:show_message("Getting archives...")
     python <<EOM
 # coding=utf-8
-try:
-    lingr_vim.get_archives()
-except (socket.error, httplib.HTTPException) as e:
-    lingrvim.echo_error("Failed to get archives due to network error")
+lingr_vim.get_archives()
 EOM
-    execute line('$') - oldLines + 1
-    echo "Getting archives... done!"
+    execute line('$') - old_line + 1
+    call s:show_message("Getting archives... done!")
 endfunction
 
 function! s:MessagesBuffer.search_delimiter(flags)
     call search('^' . s:ARCHIVES_DELIMITER, a:flags)
 endfunction
 
-function! s:MessagesBuffer.select_room(offset)
-    python <<EOM
+python <<EOM
 # coding=utf-8
-do_if_alive(lambda: lingr_vim.select_room_by_offset(int(vim.eval("a:offset"))))
-EOM
-    call s:MessagesBuffer.scroll_to_end()
-endfunction
 
-function! s:MessagesBuffer.show_say_buffer()
-    call s:SayBuffer.initialize()
-    call feedkeys('GA', 'n')
-    python <<EOM
-# coding=utf-8
-lingr_vim.set_focus(vim.eval("bufname('')"))
-EOM
-endfunction
+@vimutil.vimfunc('s:MessagesBuffer.select_room')
+@vimutil.do_if(lingr_is_alive)
+def lingr_vim_MessagesBuffer_select_room(args):
+    lingr_vim.select_room_by_offset(int(args[0]))
+    vim.eval('s:MessagesBuffer.scroll_to_end()')
 
-function! s:MessagesBuffer.toggle_favorite()
-    python <<EOM
-#coding=utf-8
-def _lingr_temp():
-    cursor = vim.current.window.cursor
-    lingr_vim.toggle_favorite(int(vim.eval('line(".")')))
-    vim.current.window.cursor = cursor
-do_if_alive(_lingr_temp)
+@vimutil.vimfunc('s:MessagesBuffer.show_say_buffer')
+@vimutil.do_if(lingr_is_alive)
+def lingr_vim_MessagesBuffer_show_say_buffer(args):
+    vim.eval('s:SayBuffer.initialize()')
+    vim.eval('feedkeys("GA", "n")')
+    lingr_vim.set_focus(vimutil.bufname())
+
+@vimutil.vimfunc('s:MessagesBuffer.toggle_favorite')
+@vimutil.cursor_preseved
+@vimutil.do_if(lingr_is_alive)
+def lingr_vim_MessagesBuffer_toggle_favorite(args):
+    lingr_vim.toggle_favorite(int(args[0]))
 EOM
-endfunction
+
 " }}}
 
 " object MembersBuffer {{{
@@ -532,7 +512,7 @@ function! s:MembersBuffer.setup()
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-members-open-member)
-                \ :<C-u>call lingr#members_buffer().open()<CR>
+                \ :<C-u>call lingr#members_buffer().open(line('.'))<CR>
 
     nmap <buffer> <silent> o <Plug>(lingr-members-open-member)
     nmap <buffer> <silent> <2-LeftMouse> <Plug>(lingr-members-open-member)
@@ -541,16 +521,16 @@ function! s:MembersBuffer.setup()
     let &filetype = s:MEMBERS_FILETYPE
 endfunction
 
-function! s:MembersBuffer.open()
-    python <<EOM
+python <<EOM
 # coding=utf-8
-def _lingr_temp():
-    lnum = vim.eval('line(".")')
-    member_id = lingr_vim.get_member_id_by_lnum(int(lnum))
-    vim.command('call lingr#open_url("http://lingr.com/{0}")'.format(member_id))
-do_if_alive(_lingr_temp)
+
+@vimutil.vimfunc('s:MembersBuffer.open')
+@vimutil.do_if(lingr_is_alive)
+def lingr_vim_MembersBuffer_open(args):
+    vim.eval('lingr#open_url("http://lingr.com/{0}")'.format(
+        lingr_vim.get_member_id(int(args[0]))))
+
 EOM
-endfunction
 
 " }}}
 
@@ -580,9 +560,9 @@ function! s:RoomsBuffer.setup()
 
     " mapping
     nnoremap <buffer> <silent> <Plug>(lingr-rooms-select-room)
-                \ :<C-u>call lingr#rooms_buffer().select()<CR>
+                \ :<C-u>call lingr#rooms_buffer().select(line('.'))<CR>
     nnoremap <buffer> <silent> <Plug>(lingr-rooms-open-room)
-                \ :<C-u>call lingr#rooms_buffer().open()<CR>
+                \ :<C-u>call lingr#rooms_buffer().open(line('.'))<CR>
 
     nmap <buffer> <silent> <CR> <Plug>(lingr-rooms-select-room)
     nmap <buffer> <silent> <LeftRelease> <Plug>(lingr-rooms-select-room)
@@ -593,27 +573,22 @@ function! s:RoomsBuffer.setup()
     let &filetype = s:ROOMS_FILETYPE
 endfunction
 
-function! s:RoomsBuffer.select()
-    python <<EOM
+python <<EOM
 # coding=utf-8
-def _lingr_temp():
-    cursor = vim.current.window.cursor
-    lingr_vim.select_room_by_lnum(cursor[0])
-    vim.current.window.cursor = cursor
-do_if_alive(_lingr_temp)
-EOM
-endfunction
 
-function! s:RoomsBuffer.open()
-    python <<EOM
-# coding=utf-8
-def _lingr_temp():
-    lnum = vim.eval('line(".")')
-    room_id = lingr_vim.get_room_id_by_lnum(int(lnum))
-    vim.command('call lingr#open_url("http://lingr.com/room/{0}")'.format(room_id))
-do_if_alive(_lingr_temp)
+@vimutil.vimfunc('s:RoomsBuffer.select')
+@vimutil.cursor_preseved
+@vimutil.do_if(lingr_is_alive)
+def lingr_vim_RoomsBuffer_select(args):
+    lingr_vim.select_room_by_lnum(int(args[0]))
+
+@vimutil.vimfunc('s:RoomsBuffer.open')
+@vimutil.do_if(lingr_is_alive)
+def lingr_vim_RoomsBuffer_open(args):
+    vim.eval('lingr#open_url("http://lingr.com/room/{0}")'.format(
+        lingr_vim.get_room_id(int(args[0]))))
+
 EOM
-endfunction
 " }}}
 
 " object SayBuffer {{{
@@ -672,6 +647,4 @@ function! s:SayBuffer.say()
     %delete _
     setlocal nomodified
 endfunction
-" }}}
-
 " }}}
