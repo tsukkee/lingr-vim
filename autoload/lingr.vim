@@ -1,6 +1,6 @@
 " lingr.vim: Lingr client for Vim
 " Version:     0.6.0
-" Last Change: 27 Feb 2011
+" Last Change: 03 Mar 2011
 " Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 "
 "
@@ -614,6 +614,7 @@ let s:RoomsBuffer = copy(s:BufferBase)
 function! s:RoomsBuffer.layout()
     execute 'leftabove split' s:ROOMS_BUFNAME
     execute g:lingr_vim_rooms_buffer_height 'wincmd _'
+    execute g:lingr_vim_sidebar_width 'wincmd |'
 
     return bufnr('')
 endfunction
