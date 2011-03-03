@@ -199,6 +199,7 @@ class LingrVim(object): # {{{
         if focused:
             self.focused_buffer_name = focused
             self.unread_counts[self.current_room_id] = 0
+            self.push_operation(RenderOperation(RenderOperation.UNREAD))
             self.render_rooms()
         else:
             self.focused_buffer_name = ""
@@ -219,6 +220,7 @@ class LingrVim(object): # {{{
             self.current_room_id = room_id
             self.unread_counts[room_id] = 0
             self.render_all()
+            self.push_operation(RenderOperation(RenderOperation.UNREAD))
 
     def get_member_id(self, lnum):
         m = self.current_members[lnum - 1]
