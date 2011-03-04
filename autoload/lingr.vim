@@ -59,35 +59,7 @@ call s:set_default('g:lingr_vim_time_format',                   '%c') " see C la
 call s:set_default('g:lingr_vim_additional_rooms',              [])
 call s:set_default('g:lingr_vim_count_unread_at_current_room',  0)
 
-if !exists('g:lingr_vim_command_to_open_url')
-    " Windows
-    if has('win32') || ('win64')
-        let g:lingr_vim_command_to_open_url = 'start rundll32 url.dll,FileProtocolHandler %s'
-    " Mac
-    elseif has('mac') || has('macunix') || system('uname') =~? '^darwin'
-        let g:lingr_vim_command_to_open_url = 'open %s'
-    " KDE
-    elseif exists('$KDE_FULL_SESSION') && $KDE_FULL_SESSION ==# 'true'
-        let g:lingr_vim_command_to_open_url = 'kfmclient exec %s &'
-    " GNOME
-    elseif exists('$GNOME_DESKTOP_SESSION_ID')
-        let g:lingr_vim_command_to_open_url = 'gnome-open %s &'
-    " Xfce
-    elseif executable('exo-open')
-        let g:lingr_vim_command_to_open_url = 'exo-open %s &'
-    else
-        let g:lingr_vim_command_to_open_url = ''
-    endif
-endif
-" }}}
-
 " Utility {{{
-python <<EOM
-# coding=utf-8
-def lingr_is_alive():
-    return 'lingr_vim' in globals() and lingr_vim and lingr_vim.is_alive()
-EOM
-
 function! s:show_message(str)
     echo a:str
     sleep 1m
@@ -115,30 +87,40 @@ else
 endif
 
 python <<EOM
+# coding=utf-8
 import vim
 import vimutil
 import lingrvim
+import webbrowser
+import re
+
+def lingr_is_alive():
+    return 'lingr_vim' in globals() and lingr_vim and lingr_vim.is_alive()
 EOM
 " }}}
 
 " Interface {{{
 
-" Reference:
-" http://github.com/kana/config/blob/master/vim/dot.vim/autoload/wwwsearch.vim
-" http://lingr.com/room/vim/archives/2010/01/15#message-157044
-function! lingr#open_url(url)
-    if match(a:url, s:URL_PATTERN) == 0 && g:lingr_vim_command_to_open_url != ""
-        call s:show_message('open url: ' . a:url . ' ...')
+python <<EOM
+# coding=utf-8
 
-        " Do we need Vim 7.2 or higher to use second argument of shellescape()?
-        execute 'silent !' printf(g:lingr_vim_command_to_open_url, shellescape(a:url, 1))
-        redraw!
-
-        call s:show_message('open url: ' .  a:url . ' ... done!')
-    else
-        call s:show_error('Failed to open given url: ' . a:url)
-    endif
-endfunction
+_lingr_vim_url_pattern = re.compile(r'^https?://\S+$')
+@vimutil.vimfunc('lingr#open_url')
+def lingr_open_url(args):
+    if len(args) > 0 and _lingr_vim_url_pattern.match(args[0]):
+        url = args[0]
+        browser = vim.eval('g:lingr_vim_command_to_open_url') \
+            if vimutil.exists('g:lingr_vim_command_to_open_url') \
+            else None # use default
+        try:
+            if webbrowser.get(browser).open(url) == False:
+                raise webbrowser.Error
+        except webbrowser.Error as we:
+            vimutil.echo_error('Failed to open url: {0} ({1})'.format(
+                url, str(we)))
+    else:
+        vimutil.echo_error('Unable to open url: ' + ''.join(args))
+EOM
 
 function! lingr#launch(use_setting)
     " get username and password
