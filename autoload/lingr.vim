@@ -109,15 +109,20 @@ _lingr_vim_url_pattern = re.compile(r'^https?://\S+$')
 def lingr_open_url(args):
     if len(args) > 0 and _lingr_vim_url_pattern.match(args[0]):
         url = args[0]
+        vimutil.echo("Open url: {0}...".format(url), True)
         browser = vim.eval('g:lingr_vim_command_to_open_url') \
             if vimutil.exists('g:lingr_vim_command_to_open_url') \
             else None # use default
+
         try:
             if webbrowser.get(browser).open(url) == False:
                 raise webbrowser.Error
         except webbrowser.Error as we:
             vimutil.echo_error('Failed to open url: {0} ({1})'.format(
                 url, str(we)))
+        else:
+            vimutil.echo("Open url: {0}... done!".format(url))
+
     else:
         vimutil.echo_error('Unable to open url: ' + ''.join(args))
 EOM

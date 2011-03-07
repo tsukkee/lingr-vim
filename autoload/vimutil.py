@@ -1,7 +1,7 @@
 # coding=utf-8:
 # vimutil.py: vim utility for python
 # Version:     0.0.1
-# Last Change: 28 Feb 2011
+# Last Change: 07 Mar 2011
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -129,6 +129,12 @@ def vimliteral(obj):
 _quote_by_backslash = re.compile('(["\\\\])')
 def escape(s):
     return _quote_by_backslash.sub(r'\\\1', s)
+
+def echo(message, with_redraw = False):
+    vim.command('echo "{0}"'.format(escape(message)))
+    if with_redraw:
+        vim.command('sleep 1m')
+        vim.command('redraw')
 
 def echo_message(message):
     vim.command('echomsg "{0}"'.format(escape(message)))
