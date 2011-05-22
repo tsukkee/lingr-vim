@@ -62,11 +62,11 @@ call s:set_default('g:lingr_vim_count_unread_at_current_room',  0)
 
 if !exists('g:lingr_vim_command_to_open_url')
     " Mac
-    if has('mac') || has('macunix') || system('uname') =~? '^darwin'
+    if has('win32') || ('win64')
+        let g:lingr_vim_command_to_open_url = 'start rundll32 url.dll,FileProtocolHandler %s'
+    elseif has('mac') || has('macunix') || system('uname') =~? '^darwin'
         let g:lingr_vim_command_to_open_url = 'open %s'
     " Windows
-    elseif has('win32') || ('win64')
-        let g:lingr_vim_command_to_open_url = 'start rundll32 url.dll,FileProtocolHandler %s'
     " KDE
     elseif exists('$KDE_FULL_SESSION') && $KDE_FULL_SESSION ==# 'true'
         let g:lingr_vim_command_to_open_url = 'kfmclient exec %s &'
