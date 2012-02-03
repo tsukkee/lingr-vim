@@ -106,9 +106,8 @@ python <<EOM
 
 _lingr_vim_url_pattern = re.compile(r'^https?://\S+$')
 @vimutil.vimfunc('lingr#open_url')
-def lingr_open_url(args):
-    if len(args) > 0 and _lingr_vim_url_pattern.match(args[0]):
-        url = args[0]
+def lingr_open_url(url):
+    if _lingr_vim_url_pattern.match(url):
         vimutil.echo("Open url: {0}...".format(url), True)
         browser = vim.eval('g:lingr_vim_command_to_open_url') \
             if vimutil.exists('g:lingr_vim_command_to_open_url') \
@@ -124,7 +123,7 @@ def lingr_open_url(args):
             vimutil.echo("Open url: {0}... done!".format(url))
 
     else:
-        vimutil.echo_error('Unable to open url: ' + ''.join(args))
+        vimutil.echo_error('Unable to open url: ' + url)
 EOM
 
 function! lingr#launch(use_setting)
@@ -209,47 +208,46 @@ python <<EOM
 
 @vimutil.vimfunc('lingr#say')
 @vimutil.do_if(lingr_is_alive, error_message = 'lingr.vim is not initialized')
-def lingr_vim_say(args):
-    text = args[0]
+def lingr_vim_say(text):
     if not lingr_vim.say(text):
         vimutil.echo_error("Failed to say: {0}".format(text))
 
 @vimutil.vimfunc('lingr#unread_count')
 @vimutil.do_if(lingr_is_alive, default = -1)
-def lingr_vim_unread_count(args):
+def lingr_vim_unread_count():
     return lingr_vim.unread_count()
 
 @vimutil.vimfunc('lingr#status')
 @vimutil.do_if(lingr_is_alive, default = '')
-def lingr_vim_status(args):
+def lingr_vim_status():
     return lingr_vim.status_message()
 
 @vimutil.vimfunc('lingr#current_room')
 @vimutil.do_if(lingr_is_alive, default = '')
-def lingr_vim_current_room(args):
+def lingr_vim_current_room():
     return vimutil.encode(lingr_vim.rooms[lingr_vim.current_room_id].name)
 
 @vimutil.vimfunc('lingr#member_count')
 @vimutil.do_if(lingr_is_alive, default = 0)
-def lingr_vim_member_count(args):
+def lingr_vim_member_count():
     return len(filter(lambda m: hasattr(m, 'presence'),
         lingr_vim.current_members))
 
 @vimutil.vimfunc('lingr#online_member_count')
 @vimutil.do_if(lingr_is_alive, default = 0)
-def lingr_vim_online_member_count(args):
+def lingr_vim_online_member_count():
     return len(filter(lambda m: hasattr(m, 'presence') and m.presence,
         lingr_vim.current_members))
 
 @vimutil.vimfunc('lingr#offline_member_count')
 @vimutil.do_if(lingr_is_alive, default = 0)
-def lingr_vim_offline_member_count(args):
+def lingr_vim_offline_member_count():
     return len(filter(lambda m: hasattr(m, 'presence') and not m.presence,
         lingr_vim.current_members))
 
 @vimutil.vimfunc('lingr#get_last_message')
 @vimutil.do_if(lingr_is_alive, default = {})
-def lingr_vim_get_last_message(args):
+def lingr_vim_get_last_message():
     m = lingr_vim.last_message
     result = {}
     if m:
@@ -259,7 +257,7 @@ def lingr_vim_get_last_message(args):
 
 @vimutil.vimfunc('lingr#get_last_member')
 @vimutil.do_if(lingr_is_alive, default = {})
-def lingr_vim_get_last_member(args):
+def lingr_vim_get_last_member():
     m = lingr_vim.last_member
     result = {}
     if m:
@@ -270,12 +268,8 @@ def lingr_vim_get_last_member(args):
 
 @vimutil.vimfunc('lingr#mark_as_read_current_room')
 @vimutil.do_if(lingr_is_alive)
-def lingr_vim_mark_as_read_current_room(args):
+def lingr_vim_mark_as_read_current_room():
     lingr_vim.set_focus(vimutil.bufname())
-
-@vimutil.vimfunc('lingr#testfunc')
-def lingr_vim_testfunc(args):
-    return {'args': args, 'num': 10, 'str': 'string'}
 
 EOM
 
@@ -338,21 +332,21 @@ python <<EOM
 
 @vimutil.vimfunc('s:BufferBase.on_enter')
 @vimutil.do_if(lingr_is_alive)
-def lingr_vim_BufferBase_on_enter(args):
+def lingr_vim_BufferBase_on_enter():
     lingr_vim.set_focus(vimutil.bufname())
     vimutil.let('b:saved_updatetime', vim.eval('&updatetime'))
     vimutil.let('&updatetime', vim.eval('g:lingr_vim_update_time'))
 
 @vimutil.vimfunc('s:BufferBase.on_leave')
 @vimutil.do_if(lingr_is_alive)
-def lingr_vim_BufferBase_on_leave(args):
+def lingr_vim_BufferBase_on_leave():
     lingr_vim.set_focus(None)
     if vimutil.exists('b:saved_updatetime'):
         vimutil.let('&updatetime', vim.eval('b:saved_updatetime'))
 
 @vimutil.vimfunc('s:BufferBase.rendering')
 @vimutil.do_if(lingr_is_alive)
-def lingr_vim_BufferBase_rendering(args):
+def lingr_vim_BufferBase_rendering():
     lingr_vim.process_queue()
 
 EOM
@@ -454,13 +448,13 @@ python <<EOM
 
 @vimutil.vimfunc('s:MessagesBuffer.select_room')
 @vimutil.do_if(lingr_is_alive)
-def lingr_vim_MessagesBuffer_select_room(args):
-    lingr_vim.select_room_by_offset(int(args[0]))
+def lingr_vim_MessagesBuffer_select_room(bufnum):
+    lingr_vim.select_room_by_offset(int(bufnum))
     vim.eval('s:MessagesBuffer.scroll_to_end()')
 
 @vimutil.vimfunc('s:MessagesBuffer.show_say_buffer')
 @vimutil.do_if(lingr_is_alive)
-def lingr_vim_MessagesBuffer_show_say_buffer(args):
+def lingr_vim_MessagesBuffer_show_say_buffer():
     vim.eval('s:SayBuffer.initialize()')
     vim.eval('feedkeys("GA", "n")')
     lingr_vim.set_focus(vimutil.bufname())
@@ -468,8 +462,8 @@ def lingr_vim_MessagesBuffer_show_say_buffer(args):
 @vimutil.vimfunc('s:MessagesBuffer.toggle_favorite')
 @vimutil.cursor_preseved
 @vimutil.do_if(lingr_is_alive)
-def lingr_vim_MessagesBuffer_toggle_favorite(args):
-    lingr_vim.toggle_favorite(int(args[0]))
+def lingr_vim_MessagesBuffer_toggle_favorite(lnum):
+    lingr_vim.toggle_favorite(int(lnum))
 EOM
 
 " }}}
@@ -513,9 +507,9 @@ python <<EOM
 
 @vimutil.vimfunc('s:MembersBuffer.open')
 @vimutil.do_if(lingr_is_alive)
-def lingr_vim_MembersBuffer_open(args):
+def lingr_vim_MembersBuffer_open(n):
     vim.eval('lingr#open_url("http://lingr.com/{0}")'.format(
-        lingr_vim.get_member_id(int(args[0]))))
+        lingr_vim.get_member_id(int(n))))
 
 EOM
 
@@ -563,17 +557,17 @@ endfunction
 python <<EOM
 # coding=utf-8
 
+@vimutil.do_if(lingr_is_alive)
 @vimutil.vimfunc('s:RoomsBuffer.select')
 @vimutil.cursor_preseved
-@vimutil.do_if(lingr_is_alive)
-def lingr_vim_RoomsBuffer_select(args):
-    lingr_vim.select_room_by_lnum(int(args[0]))
+def lingr_vim_RoomsBuffer_select(lnum):
+    lingr_vim.select_room_by_lnum(int(lnum))
 
 @vimutil.vimfunc('s:RoomsBuffer.open')
 @vimutil.do_if(lingr_is_alive)
-def lingr_vim_RoomsBuffer_open(args):
+def lingr_vim_RoomsBuffer_open(n):
     vim.eval('lingr#open_url("http://lingr.com/room/{0}")'.format(
-        lingr_vim.get_room_id(int(args[0]))))
+        lingr_vim.get_room_id(int(n))))
 
 EOM
 " }}}

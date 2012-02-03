@@ -1,7 +1,7 @@
 # coding=utf-8:
 # vimutil.py: vim utility for python
 # Version:     0.0.1
-# Last Change: 07 Mar 2011
+# Last Change: 20 Nov 2011
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,6 +25,7 @@
 
 import vim
 import re
+from functools import wraps
 
 VIM_ENCODING = vim.eval('&encoding')
 ENCODING_MODE = 'ignore'
@@ -74,19 +75,20 @@ _functions_for_vim = {}
 def vimfunc(name):
     def _(func):
         _functions_for_vim[name] = func
+        args = func.func_code.co_varnames[:func.func_code.co_argcount]
 
         vim.command("""
-function! {0}(...)
+function! {0}({2})
     python <<EOM
 # coding=utf-8
-
-vim.command('return ' + {1}.vimliteral({1}._functions_for_vim['{0}'](vim.eval('a:000'))))
+vim.command('return ' + {1}.vimliteral({1}._functions_for_vim['{0}']({3})))
 EOM
 endfunction
-        """.format(name, __name__))
+        """.format(name, __name__, ", ".join(args),
+                   ", ".join(map(lambda x: "vim.eval('a:" + x + "')", args))))
 
         def __(*args, **keywords):
-            return func(args)
+            return func(*args, **keywords)
         return __
     return _
 
