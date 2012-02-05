@@ -1,7 +1,7 @@
 # coding=utf-8:
 # vimutil.py: vim utility for python
 # Version:     0.0.1
-# Last Change: 20 Nov 2011
+# Last Change: 05 Feb 2012
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,7 +25,6 @@
 
 import vim
 import re
-from functools import wraps
 
 VIM_ENCODING = vim.eval('&encoding')
 ENCODING_MODE = 'ignore'
@@ -72,10 +71,13 @@ def cursor_preseved(func):
     return _
 
 _functions_for_vim = {}
-def vimfunc(name):
+def vimfunc(name, *arguments):
     def _(func):
         _functions_for_vim[name] = func
-        args = func.func_code.co_varnames[:func.func_code.co_argcount]
+        if len(arguments) < 1:
+            args = func.func_code.co_varnames[:func.func_code.co_argcount]
+        else:
+            args = arguments
 
         vim.command("""
 function! {0}({2})

@@ -43,21 +43,19 @@ call s:define('ARCHIVES_DELIMITER', '--------------------')
 " }}}
 
 " Settings {{{
-function! s:set_default(variable_name, default)
-    if !exists(a:variable_name)
-        let {a:variable_name} = a:default
-    endif
+function! s:set_default(name, default)
+    let g:{a:name} = get(g:, a:name, a:default)
 endfunction
 
-call s:set_default('g:lingr_vim_api_version',                   1)
-call s:set_default('g:lingr_vim_sidebar_width',                 25)
-call s:set_default('g:lingr_vim_rooms_buffer_height',           10)
-call s:set_default('g:lingr_vim_say_buffer_height',             3)
-call s:set_default('g:lingr_vim_update_time',                   500)
-call s:set_default('g:lingr_vim_remain_height_to_auto_scroll',  5)
-call s:set_default('g:lingr_vim_time_format',                   '%c') " see C language strftime() reference
-call s:set_default('g:lingr_vim_additional_rooms',              [])
-call s:set_default('g:lingr_vim_count_unread_at_current_room',  0)
+call s:set_default('lingr_vim_api_version',                   1)
+call s:set_default('lingr_vim_sidebar_width',                 25)
+call s:set_default('lingr_vim_rooms_buffer_height',           10)
+call s:set_default('lingr_vim_say_buffer_height',             3)
+call s:set_default('lingr_vim_update_time',                   500)
+call s:set_default('lingr_vim_remain_height_to_auto_scroll',  5)
+call s:set_default('lingr_vim_time_format',                   '%c') " see C language strftime() reference
+call s:set_default('lingr_vim_additional_rooms',              [])
+call s:set_default('lingr_vim_count_unread_at_current_room',  0)
 
 " Utility {{{
 function! s:show_message(str)
@@ -105,7 +103,7 @@ python <<EOM
 # coding=utf-8
 
 _lingr_vim_url_pattern = re.compile(r'^https?://\S+$')
-@vimutil.vimfunc('lingr#open_url')
+@vimutil.vimfunc('lingr#open_url', 'url')
 def lingr_open_url(url):
     if _lingr_vim_url_pattern.match(url):
         vimutil.echo("Open url: {0}...".format(url), True)
@@ -206,7 +204,7 @@ endfunction
 python <<EOM
 # coding=utf-8
 
-@vimutil.vimfunc('lingr#say')
+@vimutil.vimfunc('lingr#say', 'text')
 @vimutil.do_if(lingr_is_alive, error_message = 'lingr.vim is not initialized')
 def lingr_vim_say(text):
     if not lingr_vim.say(text):
@@ -278,7 +276,7 @@ function! lingr#quote_operator(motion_wiseness)
 
     call s:SayBuffer.initialize()
     call setline(1, lines)
-    call feedkeys('Go', 'n')
+    normal! Go
 endfunction
 " }}}
 
@@ -446,7 +444,7 @@ endfunction
 python <<EOM
 # coding=utf-8
 
-@vimutil.vimfunc('s:MessagesBuffer.select_room')
+@vimutil.vimfunc('s:MessagesBuffer.select_room', 'bufnum')
 @vimutil.do_if(lingr_is_alive)
 def lingr_vim_MessagesBuffer_select_room(bufnum):
     lingr_vim.select_room_by_offset(int(bufnum))
@@ -459,7 +457,7 @@ def lingr_vim_MessagesBuffer_show_say_buffer():
     vim.eval('feedkeys("GA", "n")')
     lingr_vim.set_focus(vimutil.bufname())
 
-@vimutil.vimfunc('s:MessagesBuffer.toggle_favorite')
+@vimutil.vimfunc('s:MessagesBuffer.toggle_favorite', 'lnum')
 @vimutil.cursor_preseved
 @vimutil.do_if(lingr_is_alive)
 def lingr_vim_MessagesBuffer_toggle_favorite(lnum):
@@ -505,7 +503,7 @@ endfunction
 python <<EOM
 # coding=utf-8
 
-@vimutil.vimfunc('s:MembersBuffer.open')
+@vimutil.vimfunc('s:MembersBuffer.open', 'n')
 @vimutil.do_if(lingr_is_alive)
 def lingr_vim_MembersBuffer_open(n):
     vim.eval('lingr#open_url("http://lingr.com/{0}")'.format(
@@ -558,12 +556,12 @@ python <<EOM
 # coding=utf-8
 
 @vimutil.do_if(lingr_is_alive)
-@vimutil.vimfunc('s:RoomsBuffer.select')
+@vimutil.vimfunc('s:RoomsBuffer.select', 'lnum')
 @vimutil.cursor_preseved
 def lingr_vim_RoomsBuffer_select(lnum):
     lingr_vim.select_room_by_lnum(int(lnum))
 
-@vimutil.vimfunc('s:RoomsBuffer.open')
+@vimutil.vimfunc('s:RoomsBuffer.open', 'n')
 @vimutil.do_if(lingr_is_alive)
 def lingr_vim_RoomsBuffer_open(n):
     vim.eval('lingr#open_url("http://lingr.com/room/{0}")'.format(
