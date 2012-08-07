@@ -125,7 +125,7 @@ AUTOCMD						*lingr-autocmd*
 ==============================================================================
 CUSTOMIZING					*lingr-customizing*
 
-Mac OS XでGworlを利用する．
+Mac OS XでGrowlを利用する．
 >
     function! s:growl(title, message)
 	execute printf('silent !growlnotify -t %s -m %s -H localhost',
