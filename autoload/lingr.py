@@ -1,7 +1,7 @@
 # coding=utf-8
 # lingr.vim: Lingr client for Vim
 # Version:     0.6.0
-# Last Change: 27 Feb 2011
+# Last Change: 11 Nov 2012
 # Author:      tsukkee <takayuki0510+lingr_vim at gmail.com>
 # Licence:     The MIT License {{{
 #     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -396,7 +396,7 @@ class Connection(object):
                         username = d["username"]
                         member = room.find_member_by_username(username)
                         if not member:
-                            return # can't find member
+                            continue # can't find member
 
                         status = d["status"] if "status" in d else None
                         if status == "online":
