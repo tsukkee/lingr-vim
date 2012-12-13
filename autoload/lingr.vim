@@ -401,6 +401,7 @@ function! s:BufferBase.setup_base()
     autocmd BufEnter <buffer> silent call s:BufferBase.on_enter()
     autocmd BufLeave <buffer> silent call s:BufferBase.on_leave()
     autocmd CursorHold <buffer> silent call s:BufferBase.polling()
+    doau BufEnter <buffer>
 endfunction
 
 function! s:BufferBase.layout()
@@ -430,7 +431,7 @@ EOM
 endfunction
 
 function! s:BufferBase.polling()
-    silent call feedkeys("g\<Esc>", "n")
+    silent! call feedkeys("g\<Esc>", "n")
 endfunction
 
 function! s:BufferBase.rendering()
