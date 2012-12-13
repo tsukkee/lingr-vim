@@ -59,6 +59,7 @@ call s:set_default('g:lingr_vim_remain_height_to_auto_scroll',  5)
 call s:set_default('g:lingr_vim_time_format',                   '%c') " see C language strftime() reference
 call s:set_default('g:lingr_vim_additional_rooms',              [])
 call s:set_default('g:lingr_vim_count_unread_at_current_room',  0)
+call s:set_default('g:lingr_vim_terminate_thread_immediately',  1)
 
 if !exists('g:lingr_vim_command_to_open_url')
     " Mac
@@ -401,6 +402,7 @@ function! s:BufferBase.setup_base()
     autocmd BufEnter <buffer> silent call s:BufferBase.on_enter()
     autocmd BufLeave <buffer> silent call s:BufferBase.on_leave()
     autocmd CursorHold <buffer> silent call s:BufferBase.polling()
+    doau BufEnter <buffer>
 endfunction
 
 function! s:BufferBase.layout()
@@ -430,7 +432,7 @@ EOM
 endfunction
 
 function! s:BufferBase.polling()
-    silent call feedkeys("g\<Esc>", "n")
+    silent! call feedkeys("g\<Esc>", "n")
 endfunction
 
 function! s:BufferBase.rendering()
