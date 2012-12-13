@@ -136,6 +136,8 @@ class LingrVim(object):
         self.last_message = None # lingr.Message
         self.last_member =  None # lingr.Member
 
+        self.observer = None
+
     def __del__(self):
         self.destroy()
 
@@ -210,10 +212,20 @@ class LingrVim(object):
         self.lingr.join_hooks.append(join_hook)
         self.lingr.leave_hooks.append(leave_hook)
 
-        LingrObserver(self.lingr).start()
+        self.observer = LingrObserver(self.lingr)
+        self.observer.start()
 
     def destroy(self):
         self.lingr.destroy()
+        if int(vim.eval('g:lingr_vim_terminate_thread_immediately')):
+            try:
+                self.observer.quit()
+            except:
+                try:
+                    self.observer._Thread__stop()
+                except:
+                    pass
+        self.observer = None
 
     def set_focus(self, focused):
         if focused:

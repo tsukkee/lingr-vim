@@ -59,6 +59,7 @@ call s:set_default('g:lingr_vim_remain_height_to_auto_scroll',  5)
 call s:set_default('g:lingr_vim_time_format',                   '%c') " see C language strftime() reference
 call s:set_default('g:lingr_vim_additional_rooms',              [])
 call s:set_default('g:lingr_vim_count_unread_at_current_room',  0)
+call s:set_default('g:lingr_vim_terminate_thread_immediately',  1)
 
 if !exists('g:lingr_vim_command_to_open_url')
     " Mac
