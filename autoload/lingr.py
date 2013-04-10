@@ -376,7 +376,7 @@ class Connection(object):
         self._debug("event/observe response: " + str(res))
 
         if "counter" in res:
-            self.counter = res["counter"]
+            self.counter = max(self.counter, res["counter"])
 
         if "events" in res:
             for event in res["events"]:
