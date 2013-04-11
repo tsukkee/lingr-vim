@@ -32,6 +32,7 @@
 import httplib
 import socket
 import urllib
+import urllib2
 import time
 import logging
 import json
@@ -147,9 +148,7 @@ class APIError(Exception):
 
 class Connection(object):
     SESSION_FILE = os.path.expanduser('~/.lingr_session')
-    DOMAIN = "lingr.com"
-    DOMAIN_OBSERVE = "lingr.com:8080"
-    API_PATH = "/api/"
+    API_URL = "http://lingr.com/api/"
     HEADERS = {"Content-type": "application/x-www-form-urlencoded",
                "User-agent": "Lingr-Vim(http://github.com/tsukkee/lingr-vim)"}
 
@@ -429,25 +428,20 @@ class Connection(object):
             time.sleep(Connection.RETRY_INTERVAL)
 
     def _get(self, path, params = None):
-        is_observe = path == "event/observe"
-        domain = Connection.DOMAIN_OBSERVE if is_observe else Connection.DOMAIN
-        url = Connection.API_PATH + path
+        url = Connection.API_URL + path
         if params:
             url += '?' + urllib.urlencode(params)
 
-        connection = httplib.HTTPConnection(domain, timeout=Connection.REQUEST_TIMEOUT)
         try:
             self._debug("GET requesting: " + url)
-            connection.request("GET", url, headers=Connection.HEADERS)
-            res = json.loads(connection.getresponse().read())
+            response = urllib2.urlopen(url, timeout=Connection.REQUEST_TIMEOUT)
+            res = json.loads(response.read())
         except socket.timeout as e:
             self._debug("get request timed out: " + url)
-            if is_observe:
+            if path == "event/observe":
                 res = { "status" : "ok" }
             else:
                 raise e
-
-        connection.close()
 
         if res["status"] == "ok":
             return res
@@ -455,18 +449,15 @@ class Connection(object):
             raise APIError(res)
 
     def _post(self, path, params = None):
-        url = Connection.API_PATH + path
+        url = Connection.API_URL + path
         params = urllib.urlencode(params) if params else ""
 
-        connection = httplib.HTTPConnection(Connection.DOMAIN, timeout=Connection.REQUEST_TIMEOUT)
         try:
-            connection.request("POST", url, params, Connection.HEADERS)
-            res = json.loads(connection.getresponse().read())
+            response = urllib2.urlopen(url, params, timeout=Connection.REQUEST_TIMEOUT)
+            res = json.loads(response.read())
         except socket.timeout as e:
             self._debug("post request timed out: " + url)
             raise e
-
-        connection.close()
 
         if res["status"] == "ok":
             return res
