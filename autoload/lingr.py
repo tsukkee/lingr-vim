@@ -37,6 +37,7 @@ import time
 import logging
 import json
 import os
+import sys
 
 ENCODING_MODE = 'ignore'
 
@@ -436,6 +437,11 @@ class Connection(object):
             self._debug("GET requesting: " + url)
             response = urllib2.urlopen(url, timeout=Connection.REQUEST_TIMEOUT)
             res = json.loads(response.read())
+        except urllib2.URLError as e:
+            code = "code" in dir(e) and e.code or -1
+            detail = str(sys.exc_info()[0])
+            self._debug("get request failed: " + detail)
+            raise APIError({"code": code, "detail": detail})
         except socket.timeout as e:
             self._debug("get request timed out: " + url)
             if path == "event/observe":
@@ -455,6 +461,11 @@ class Connection(object):
         try:
             response = urllib2.urlopen(url, params, timeout=Connection.REQUEST_TIMEOUT)
             res = json.loads(response.read())
+        except urllib2.URLError as e:
+            code = "code" in dir(e) and e.code or -1
+            detail = str(sys.exc_info()[0])
+            self._debug("post request failed: " + detail)
+            raise APIError({"code": code, "detail": detail})
         except socket.timeout as e:
             self._debug("post request timed out: " + url)
             raise e
