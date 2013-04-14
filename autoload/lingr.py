@@ -178,7 +178,7 @@ class Connection(object):
 
         self.is_alive = False
 
-        self.last_message_ids = []
+        self.last_message_ids = set()
 
     def start(self):
         while True:
@@ -378,12 +378,10 @@ class Connection(object):
         self._debug("event/observe response: " + str(res))
 
         if "counter" in res:
-            if res["counter"] <= self.counter:
-                return
-            self.counter = res["counter"]
+            self.counter = max(self.counter, res["counter"])
 
         if "events" in res:
-            last_message_ids = []
+            last_message_ids = set()
             for event in res["events"]:
                 if "message" in event:
                     d = event["message"]
@@ -392,7 +390,7 @@ class Connection(object):
                         m = Message(d)
                         if m.id in self.last_message_ids:
                             continue
-                        last_message_ids.append(m.id)
+                        last_message_ids.add(m.id)
                         m.decide_mine(self.public_id)
                         for h in self.message_hooks:
                             h(self, room, m)
@@ -416,8 +414,7 @@ class Connection(object):
                             member.presence = False
                             for h in self.leave_hooks:
                                 h(self, room, member)
-            if last_message_ids:
-                self.last_message_ids = last_message_ids
+            self.last_message_ids |= last_message_ids
 
     def _on_error(self, e):
         self._log_error(repr(e))
