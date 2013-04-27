@@ -61,7 +61,7 @@ def make_modifiable(buffer, func):
     return do
 
 def echo_message(message):
-    vim.command('echomsg "{0}"'.format(message))
+    vim.command("echomsg '{0}'".format(message.replace("'", "''")))
 
 def echo_error(message):
     vim.command('echohl ErrorMsg')
