@@ -60,6 +60,7 @@ call s:set_default('g:lingr_vim_time_format',                   '%c') " see C la
 call s:set_default('g:lingr_vim_additional_rooms',              [])
 call s:set_default('g:lingr_vim_count_unread_at_current_room',  0)
 call s:set_default('g:lingr_vim_terminate_thread_immediately',  1)
+call s:set_default('g:lingr_vim_use_timer',                     800 <= v:version)
 
 if !exists('g:lingr_vim_command_to_open_url')
     " Mac
@@ -170,7 +171,15 @@ EOM
 
     augroup plugin-lingr-vim
         autocmd!
-        autocmd CursorHold * call s:BufferBase.rendering()
+        if g:lingr_vim_use_timer
+          let s:timer_id = timer_start(
+          \   g:lingr_vim_update_time,
+          \   { -> s:BufferBase.rendering() },
+          \   {'repeat': -1},
+          \ )
+        else
+          autocmd CursorHold * call s:BufferBase.rendering()
+        endif
         autocmd VimLeavePre * silent call lingr#exit()
         autocmd User plugin-lingr-* : " do nothing
     augroup END
@@ -188,6 +197,11 @@ function! lingr#exit()
     augroup plugin-lingr-vim
         autocmd! CursorHold,VimLeavePre
     augroup END
+
+    if exists('s:timer_id')
+      call timer_stop(s:timer_id)
+      unlet s:timer_id
+    endif
 
     python <<EOM
 # coding=utf-8
@@ -401,7 +415,9 @@ function! s:BufferBase.setup_base()
     autocmd! * <buffer>
     autocmd BufEnter <buffer> silent call s:BufferBase.on_enter()
     autocmd BufLeave <buffer> silent call s:BufferBase.on_leave()
-    autocmd CursorHold <buffer> silent call s:BufferBase.polling()
+    if !g:lingr_vim_use_timer
+      autocmd CursorHold <buffer> silent call s:BufferBase.polling()
+    endif
     doau BufEnter <buffer>
 endfunction
 
@@ -417,8 +433,10 @@ function! s:BufferBase.on_enter()
 # coding=utf-8
 do_if_alive(lambda: lingr_vim.set_focus(vim.eval("bufname('')")))
 EOM
-    let b:saved_updatetime = &updatetime
-    let &updatetime = g:lingr_vim_update_time
+    if !g:lingr_vim_use_timer
+      let b:saved_updatetime = &updatetime
+      let &updatetime = g:lingr_vim_update_time
+    endif
 endfunction
 
 function! s:BufferBase.on_leave()
